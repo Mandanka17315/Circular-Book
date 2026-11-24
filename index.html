@@ -130,6 +130,25 @@ label.f .warn{font-weight:500;color:var(--amber)}
 .bar{height:6px;background:var(--blue-soft);border-radius:99px;overflow:hidden;margin-top:10px}
 .bar div{height:100%;background:var(--blue);width:0;transition:width .2s}
 
+/* Upload: file preview next to (desktop) or above (phone) the form */
+.upgrid{display:block}
+.upgrid.has-prev{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:14px;align-items:start}
+.pv{background:#fff;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;position:sticky;top:66px;display:flex;flex-direction:column;height:calc(100vh - 150px)}
+.pvbar{display:flex;align-items:center;gap:6px;padding:6px 8px;border-bottom:1px solid var(--border);font-size:11px;color:var(--muted)}
+.pvbar .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;color:var(--ink)}
+.pvbar button{border:1px solid var(--border);background:#fff;border-radius:8px;height:28px;min-width:28px;padding:0 8px;font-size:12px;font-weight:600}
+.pvbody{flex:1;overflow:auto;background:#EEF2F7;padding:8px;-webkit-overflow-scrolling:touch}
+.pvbody canvas,.pvbody img{display:block;margin:0 auto 8px;background:#fff;box-shadow:0 1px 4px rgba(15,23,42,.15);max-width:none}
+.pvbody iframe{width:100%;height:100%;border:0;background:#fff}
+.pvbody .msg{color:var(--muted);text-align:center;padding:30px 12px;font-size:12px}
+main.wide{max-width:1240px}
+@media(max-width:860px){
+  .upgrid.has-prev{display:block}
+  .pv{top:60px;height:42vh;z-index:6;margin-bottom:12px;box-shadow:0 6px 18px rgba(15,23,42,.10)}
+  .pv.small{height:44px}
+  .pv.small .pvbody{display:none}
+}
+
 /* Bottom nav */
 nav.bottom{position:fixed;left:0;right:0;bottom:0;z-index:20;background:rgba(255,255,255,.96);backdrop-filter:blur(8px);border-top:1px solid var(--border);padding-bottom:env(safe-area-inset-bottom)}
 nav.bottom .wrap{display:flex;gap:8px;padding-top:6px;padding-bottom:6px}
@@ -247,6 +266,12 @@ code{background:#F1F5F9;border-radius:6px;padding:1px 5px;font-size:12px;word-br
 
     <!-- Page 2: upload -->
     <section id="pageUpload" class="hidden">
+     <div class="upgrid" id="upgrid">
+      <div class="pv hidden" id="pv">
+        <div class="pvbar"><span class="t" id="pvTitle">Preview</span>
+          <button id="pvOut" title="Smaller">−</button><button id="pvIn" title="Bigger">+</button><button id="pvFit" title="Fit width">Fit</button><button id="pvHide" title="Hide or show">Hide</button></div>
+        <div class="pvbody" id="pvBody"></div>
+      </div>
       <div class="panel">
         <h2>Upload a circular</h2>
         <div class="sub">The file is saved in your Google Drive folder and renamed to <b>yy mm dd Number Content</b>.</div>
@@ -280,6 +305,7 @@ code{background:#F1F5F9;border-radius:6px;padding:1px 5px;font-size:12px;word-br
         <div id="uProg" class="hidden"><div class="bar"><div id="uBar"></div></div><div style="font-size:11px;color:var(--muted);margin-top:4px" id="uProgTxt"></div></div>
         <button class="btn" id="uGo" style="width:100%;margin-top:14px">Upload</button>
       </div>
+     </div>
     </section>
   </main>
 
@@ -778,6 +804,7 @@ function showScreen(which) {
 function setPage(p) {
   S.page = p;
   $("#pageBrowse").classList.toggle("hidden", p !== "browse"); $("#pageUpload").classList.toggle("hidden", p !== "upload");
+  $("main").classList.toggle("wide", p === "upload" && !!PV.kind);
   $("#navBrowse").classList.toggle("on", p === "browse"); $("#navUpload").classList.toggle("on", p === "upload");
   window.scrollTo(0, 0);
 }
@@ -892,8 +919,81 @@ async function uploadToDrive(file, parentId, name, description, props, onProgres
     x.send(file);
   });
 }
+/* ---------- preview of the chosen file while filling in the details ---------- */
+const PDFJS = "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/";
+let pdfjsLoading = null;
+function loadPdfJs() {
+  if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+  if (!pdfjsLoading) pdfjsLoading = new Promise((res, rej) => {
+    const sc = document.createElement("script"); sc.src = PDFJS + "pdf.min.js";
+    sc.onload = () => { if (!window.pdfjsLib) return rej(new Error("no pdf.js")); pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS + "pdf.worker.min.js"; res(pdfjsLib); };
+    sc.onerror = () => { pdfjsLoading = null; rej(new Error("pdf.js didn't load")); };
+    document.head.appendChild(sc);
+  });
+  return pdfjsLoading;
+}
+const PV = { url: null, kind: null, pdf: null, zoom: 1, token: 0, maxPages: 30 };
+function clearPreview() {
+  PV.token++; if (PV.pdf) { try { PV.pdf.destroy(); } catch (e) {} } PV.pdf = null;
+  if (PV.url) URL.revokeObjectURL(PV.url); PV.url = null; PV.kind = null; PV.zoom = 1;
+  $("#pvBody").innerHTML = ""; $("#pv").classList.add("hidden"); $("#upgrid").classList.remove("has-prev"); $("main").classList.remove("wide");
+}
+async function showPreview(f) {
+  clearPreview(); if (!f) return;
+  const name = lc(f.name), type = lc(f.type);
+  const isPdf = type === "application/pdf" || name.endsWith(".pdf");
+  const isImg = type.startsWith("image/") && !/heic|heif|tiff/.test(type);
+  $("#pv").classList.remove("hidden", "small"); $("#pvHide").textContent = "Hide";
+  $("#upgrid").classList.add("has-prev"); $("main").classList.add("wide");
+  $("#pvTitle").textContent = f.name;
+  const body = $("#pvBody");
+  PV.url = URL.createObjectURL(f);
+  if (isImg) { PV.kind = "img"; body.innerHTML = `<img id="pvImg" alt="">`; $("#pvImg").src = PV.url; $("#pvImg").onload = applyZoom; return; }
+  if (!isPdf) { PV.kind = "none"; body.innerHTML = `<div class="msg">No preview for this type of file (${esc(extOf(f.name) || "unknown").toUpperCase()}).<br>Open it in another app to read the details, or just fill them in.</div>`; return; }
+  PV.kind = "pdf"; body.innerHTML = `<div class="msg">Opening PDF…</div>`;
+  const my = PV.token;
+  try {
+    const lib = await loadPdfJs();
+    const pdf = await lib.getDocument({ data: new Uint8Array(await f.arrayBuffer()) }).promise;
+    if (my !== PV.token) { pdf.destroy(); return; }
+    PV.pdf = pdf; await renderPdf();
+  } catch (e) {
+    if (my !== PV.token) return;
+    // Fallback: the browser's own PDF viewer (works on computers; phones may only offer "Open").
+    PV.kind = "frame"; body.innerHTML = `<iframe src="${PV.url}" title="Preview"></iframe>`;
+  }
+}
+async function renderPdf() {
+  const pdf = PV.pdf; if (!pdf) return; const my = ++PV.token; const body = $("#pvBody");
+  const width = Math.max(200, body.clientWidth - 16) * PV.zoom; const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const frag = document.createDocumentFragment(); const canvases = [];
+  const n = Math.min(pdf.numPages, PV.maxPages);
+  for (let i = 1; i <= n; i++) { const c = document.createElement("canvas"); frag.appendChild(c); canvases.push(c); }
+  body.innerHTML = ""; body.appendChild(frag);
+  if (pdf.numPages > n) body.insertAdjacentHTML("beforeend", `<div class="msg">Showing the first ${n} of ${pdf.numPages} pages.</div>`);
+  for (let i = 1; i <= n; i++) {
+    if (my !== PV.token) return;
+    const page = await pdf.getPage(i);
+    const vp1 = page.getViewport({ scale: 1 }); const scale = width / vp1.width; const vp = page.getViewport({ scale: scale * dpr });
+    const c = canvases[i - 1]; c.width = Math.floor(vp.width); c.height = Math.floor(vp.height);
+    c.style.width = Math.floor(vp.width / dpr) + "px"; c.style.height = Math.floor(vp.height / dpr) + "px";
+    await page.render({ canvasContext: c.getContext("2d"), viewport: vp }).promise;
+  }
+}
+function applyZoom() {
+  if (PV.kind === "pdf") renderPdf();
+  if (PV.kind === "img") { const img = $("#pvImg"); if (img) img.style.width = Math.max(100, ($("#pvBody").clientWidth - 16) * PV.zoom) + "px"; }
+}
+function bindPreview() {
+  $("#pvIn").addEventListener("click", () => { PV.zoom = Math.min(4, PV.zoom * 1.25); applyZoom(); });
+  $("#pvOut").addEventListener("click", () => { PV.zoom = Math.max(0.4, PV.zoom / 1.25); applyZoom(); });
+  $("#pvFit").addEventListener("click", () => { PV.zoom = 1; applyZoom(); });
+  $("#pvHide").addEventListener("click", () => { const pv = $("#pv"); pv.classList.toggle("small"); $("#pvHide").textContent = pv.classList.contains("small") ? "Show" : "Hide"; });
+  let rt; window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(() => { if (PV.kind && S.page === "upload") applyZoom(); }, 250); });
+}
+
 function setFile(f) {
-  S.file = f || null;
+  S.file = f || null; showPreview(S.file);
   $("#dropBig").textContent = f ? f.name : "Choose a file";
   $("#dropSmall").textContent = f ? `${(f.size / 1048576).toFixed(2)} MB · tap to choose another` : "or drag it here. PDF, Word, Excel, images, any size.";
   updateUploadPreview();
@@ -1050,7 +1150,7 @@ function start() {
   if (hasToken()) refresh();
 }
 $("#uDate").value = todayIso();
-bind(); start();
+bind(); bindPreview(); start();
 </script>
 </body>
 </html>
