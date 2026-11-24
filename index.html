@@ -978,7 +978,7 @@ function viewCircular(c) {
   let V = null;
   modal(`<div class="vhead"><div class="t">${esc(c.content || c.fileName)}<small>${esc([fmtDate(c.circularDate), c.circularNumber && "No. " + c.circularNumber, [c.folder, ...String(c.subfolder || "").split(" / ").filter(Boolean)].join(" › ")].filter(Boolean).join(" · "))}</small></div><button class="x" data-close title="Close">×</button>
       <div class="vbtns"><button data-v="out" title="Smaller">−</button><button data-v="in" title="Bigger">+</button><button data-v="fit">Fit</button>
-      <button data-v="dl">Download</button><button data-v="drive">Open in Drive</button><button data-v="more">Details</button></div></div>
+      <button data-v="dl">Download</button><button data-v="drive">Open in Drive</button><button data-v="move">Move to</button><button data-v="more">Details</button><button data-v="del" style="color:var(--red);border-color:#FECACA">Delete</button></div></div>
     <div class="pvbody" id="vBody"><div class="msg">Loading preview…</div></div>`,
     async (sc, close) => {
       const body = sc.querySelector("#vBody"); V = makeViewer(body);
@@ -987,6 +987,8 @@ function viewCircular(c) {
         if (v === "in") V.zoomBy(1.25); if (v === "out") V.zoomBy(1 / 1.25); if (v === "fit") V.fit();
         if (v === "dl") downloadCircular(c); if (v === "drive") openInDrive(c);
         if (v === "more") { close(); showDetails(c); }
+        if (v === "del") { close(); deleteCircular(c); }
+        if (v === "move") { close(); moveCircular(c); }
       });
       try {
         await signing; renderStatus();
