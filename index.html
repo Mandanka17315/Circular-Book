@@ -119,7 +119,7 @@ label.f .warn{font-weight:500;color:var(--amber)}
 .drop.over{background:#EFF6FF;border-color:var(--blue)}
 .drop .big{font-weight:700;color:var(--blue)}
 .drop .small{color:var(--muted);font-size:11px;margin-top:2px;word-break:break-all}
-.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+.formgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;margin-top:14px}
 .formgrid .full{grid-column:1/-1}
 .preview{background:#F8FAFC;border:1px solid var(--border);border-radius:10px;padding:8px 10px;font-size:12px;word-break:break-all}
 .preview b{color:var(--muted);font-weight:600;font-size:11px;display:block}
@@ -157,8 +157,11 @@ main.wide{max-width:1240px}
 .fchain select:focus{outline:0;border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.12)}
 .lvl .arrow{color:var(--muted);font-size:14px;align-self:center;width:14px;flex:none}
 .pick{display:flex;gap:6px;align-items:stretch}
-.pick select{flex:1;min-width:0}
+.pick select{flex:1;min-width:0;width:100%}
+.pick .btn{flex:none}
 .pick .btn{white-space:nowrap;height:auto;color:var(--blue);font-weight:700}
+.done{background:#ECFDF5;border:1px solid #A7F3D0;color:#065F46;border-radius:12px;padding:10px 12px;margin-bottom:12px;font-size:12px;display:flex;gap:10px;align-items:center;justify-content:space-between}
+.done b{overflow-wrap:anywhere}
 .dups{border:1px solid #BFDBFE;background:#F8FBFF;border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:6px}
 .dups.strong{border-color:#FCD34D;background:#FFFBEB}
 .dhead{font-size:12px;font-weight:700;color:#1E3A8A}
@@ -216,7 +219,7 @@ code{background:#F1F5F9;border-radius:6px;padding:1px 5px;font-size:12px;word-br
 .gbtn:hover{background:#F8FAFC}
 
 @media(max-width:560px){
-  .formgrid{grid-template-columns:1fr}
+  .formgrid{grid-template-columns:minmax(0,1fr)}
   .tiles{grid-template-columns:repeat(2,1fr)}
   .status .txt{display:none}
   .fbtn .lbl{display:none}
@@ -313,6 +316,7 @@ code{background:#F1F5F9;border-radius:6px;padding:1px 5px;font-size:12px;word-br
       <div class="panel">
         <h2>Upload a circular</h2>
         <div class="sub">The file is saved in your Google Drive folder and renamed to <b>yy mm dd Number Content</b>.</div>
+        <div id="uDone" class="done hidden"></div>
         <label class="drop" id="drop">
           <input type="file" id="uFile" class="hidden">
           <div class="big" id="dropBig">Choose a file</div>
@@ -818,7 +822,7 @@ function chainHtml(path) {
     h += `<div class="pick lvl" ${pad}>${arrow}<select data-lvl="${i}" aria-label="${i ? "Subfolder level " + i : "Folder"}">
       <option value="">${i ? "No subfolder (save in " + esc(path[i - 1]) + ")" : "Choose a folder…"}</option>
       ${names.map(n => `<option value="${esc(n)}" ${lc(n) === lc(cur) ? "selected" : ""}>${esc(n)}</option>`).join("")}</select>
-      <button type="button" class="btn ghost small" data-newlvl="${i}">+ New ${i ? "subfolder" : "folder"}</button></div>`;
+      <button type="button" class="btn ghost small" data-newlvl="${i}" title="Create a new ${i ? "subfolder here" : "folder"}">+ New</button></div>`;
   }
   return h;
 }
@@ -860,7 +864,7 @@ function updateUploadPreview() {
   const num = $("#uNum").value.trim(), content = $("#uContent").value.trim(), date = $("#uDate").value;
   $("#uName").textContent = S.file && (num || content)
     ? buildFileName(date, num, content, S.file.name, S.file.type) : "Choose a file and fill in the details";
-  const dups = findDuplicates(date, num, content);
+  const dups = findDuplicates(S.dateTouched ? date : "", num, content);
   const w = $("#uNumWarn"); const exact = dups.filter(d => d.why.includes("Same number"));
   w.classList.toggle("hidden", !exact.length);
   if (exact.length) w.textContent = exact.length === 1 ? "This number is already uploaded. See below." : `This number is already uploaded ${exact.length} times. See below.`;
@@ -1210,7 +1214,16 @@ function bindPreview() {
   let rt; window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(() => { if (PV.kind && S.page === "upload") PV.apply(); }, 250); });
 }
 
+// Clean form for the next circular. The folder choice is kept, since uploads usually come in batches.
+function resetUploadForm() {
+  setFile(null); $("#uFile").value = ""; $("#uNum").value = ""; $("#uContent").value = "";
+  $("#uDate").value = todayIso(); S.dateTouched = false; S.dupOkFor = null;
+  $("#uErr").classList.add("hidden"); $("#uNumWarn").classList.add("hidden");
+  $("#uProg").classList.add("hidden"); $("#uBar").style.width = "0%"; $("#uGo").textContent = "Upload";
+  updateUploadPreview();
+}
 function setFile(f) {
+  if (f) $("#uDone").classList.add("hidden");
   S.file = f || null; showPreview(S.file);
   $("#dropBig").textContent = f ? f.name : "Choose a file";
   $("#dropSmall").textContent = f ? `${(f.size / 1048576).toFixed(2)} MB · tap to choose another` : "or drag it here. PDF, Word, Excel, images, any size.";
@@ -1254,9 +1267,12 @@ async function doUpload() {
     $("#uProgTxt").textContent = "Saving to the circular list…";
     try { await updateIndex(list => list.filter(c => c.driveItemId !== entry.driveItemId).concat(entry)); }
     catch (e) { toast("Uploaded, but the shared list wasn't updated: " + e.message + " The details are kept on the file, so it still shows up.", 7000); }
-    toast("Uploaded as " + f.name, 4500);
-    setFile(null); $("#uFile").value = ""; $("#uNum").value = ""; $("#uContent").value = ""; $("#uDate").value = todayIso();
-    $("#uProg").classList.add("hidden"); renderAll();
+    resetUploadForm();
+    const done = $("#uDone");
+    done.innerHTML = `<span>✓ Uploaded <b>${esc(f.name)}</b> to ${esc(pathOf(parentId).join(" › "))}. Ready for the next one.</span><button class="chip" id="uDoneView">View</button>`;
+    done.classList.remove("hidden");
+    $("#uDoneView").onclick = () => { const c = byId(entry.driveItemId); if (c) viewCircular(c); };
+    renderAll(); window.scrollTo({ top: 0, behavior: "smooth" });
   } catch (e) {
     err.textContent = e.message || String(e); err.classList.remove("hidden"); $("#uProg").classList.add("hidden");
     if (e instanceof AuthError) renderAll();
@@ -1337,6 +1353,7 @@ function bind() {
   });
   $("#uPath").addEventListener("click", e => { const b = e.target.closest("[data-newlvl]"); if (b) newFolderDialog(S.upPath.slice(0, +b.dataset.newlvl), real => { S.upPath = real; renderUploadLists(); }); });
   ["#uNum", "#uContent", "#uDate"].forEach(s => $(s).addEventListener("input", updateUploadPreview));
+  $("#uDate").addEventListener("input", () => { S.dateTouched = true; updateUploadPreview(); });
   $("#uNum").addEventListener("input", () => { if (S.dupOkFor) { S.dupOkFor = null; $("#uGo").textContent = "Upload"; $("#uErr").classList.add("hidden"); } });
   $("#uGo").addEventListener("click", doUpload);
   $("#uDups").addEventListener("click", e => { const b = e.target.closest("[data-dupview]"); if (b) { const c = byId(b.dataset.dupview); if (c) viewCircular(c); } });
