@@ -51,7 +51,7 @@ header{position:sticky;top:0;z-index:20;background:rgba(245,248,255,.92);backdro
 .menu button:hover{background:#F1F5F9}
 .menu .who{padding:8px 10px;font-size:11px;color:var(--muted);border-bottom:1px solid var(--border);margin-bottom:4px}
 
-main{padding:12px 0 96px}
+main.wrap{padding-top:12px;padding-bottom:calc(120px + env(safe-area-inset-bottom))}
 
 /* Search */
 .searchrow{display:flex;gap:8px;align-items:center}
@@ -374,7 +374,7 @@ const CONFIG = {
   ROOT_LINK: "https://drive.google.com/drive/folders/1gfss_dQq4kbq_ZxYs5C0IddHIFEhPhWT",
 };
 
-const APP_VERSION = "24 Nov 2026 (v8)";
+const APP_VERSION = "24 Nov 2026 (v9)";
 const SCOPE = "https://www.googleapis.com/auth/drive";
 // Any unexpected error shows up on screen instead of a button silently doing nothing.
 window.addEventListener("error", e => { try { toast("Something went wrong: " + (e.message || "unknown error"), 6000); } catch (x) {} });
@@ -1271,13 +1271,13 @@ async function doUpload() {
         num = $("#uNum").value.trim(), content = $("#uContent").value.trim();
   const problem = !S.file ? "Choose a file first." : !folder ? "Choose a folder, or tap + New folder." : folder.includes("/") ? "A folder name can't contain /." :
     !date ? "Pick the date of the circular." : !num ? "Type the circular number." : !content ? "Type the content of the circular." : "";
-  if (problem) { err.textContent = problem; err.classList.remove("hidden"); return; }
+  if (problem) { err.textContent = problem; err.classList.remove("hidden"); err.scrollIntoView({ block: "center", behavior: "smooth" }); toast(problem); return; }
   if (S.uploading) { toast("An upload is already running. Please wait for it to finish."); return; }
   const same = findDuplicates("", num, "").filter(d => d.why.includes("Same number"));
   if (same.length && S.dupOkFor !== normNum(num)) {
     S.dupOkFor = normNum(num); $("#uGo").textContent = "Upload anyway";
     err.textContent = `Circular number ${num} is already uploaded ("${same[0].c.content}", ${fmtDate(same[0].c.circularDate) || "no date"}). Check the list below. If this is a different circular, tap "Upload anyway".`;
-    err.classList.remove("hidden"); return;
+    err.classList.remove("hidden"); err.scrollIntoView({ block: "center", behavior: "smooth" }); return;
   }
   const signing = ensureSignedIn(); // straight from the tap, so the Google window isn't blocked
   S.uploading = true; const btn = $("#uGo"); btn.disabled = true; btn.textContent = "Uploading…";
