@@ -1,0 +1,1056 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F8FF">
+<title>Circular Book</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://www.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+:root{
+  --ink:#0F172A; --muted:#64748B; --border:#E2E8F0; --blue:#2563EB; --blue-soft:#DBEAFE;
+  --purple:#7C3AED; --green:#10B981; --amber:#B45309; --amber-soft:#FEF3C7; --red:#DC2626;
+  --card:#FFFFFF; --radius:14px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+html{scroll-padding-bottom:90px;scroll-padding-top:70px}
+body{
+  font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; font-size:13px; line-height:1.4; color:var(--ink);
+  background:linear-gradient(180deg,#F5F8FF 0%,#E3EEFD 55%,#E6F6F4 100%) fixed; min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+.hidden{display:none!important}
+.wrap{max-width:920px;margin:0 auto;padding:0 16px}
+
+/* Header */
+header{position:sticky;top:0;z-index:20;background:rgba(245,248,255,.92);backdrop-filter:blur(8px);border-bottom:1px solid rgba(226,232,240,.7)}
+.hbar{display:flex;align-items:center;gap:10px;padding:10px 0}
+.logo{width:36px;height:36px;border-radius:10px;flex:none;display:grid;place-items:center;color:#fff;
+  background:linear-gradient(135deg,#1D4ED8,#0D9488 60%,#22C55E)}
+.brand{flex:1;min-width:0}
+.brand h1{margin:0;font-size:17px;font-weight:800;letter-spacing:-.01em;line-height:1.15}
+.brand .by{font-size:11px;color:var(--muted);font-weight:500}
+.status{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:6px;white-space:nowrap}
+.chip{border:1px solid var(--border);background:#fff;border-radius:999px;padding:5px 10px;font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:6px}
+.chip.primary{background:var(--blue);border-color:var(--blue);color:#fff}
+.icon-btn{border:0;background:transparent;width:34px;height:34px;border-radius:10px;display:grid;place-items:center;color:var(--muted);flex:none}
+.icon-btn:hover{background:rgba(37,99,235,.08);color:var(--blue)}
+.spin{width:12px;height:12px;border:2px solid var(--blue-soft);border-top-color:var(--blue);border-radius:50%;animation:sp .8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* Menu */
+.menu{position:absolute;right:16px;top:52px;background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:0 12px 32px rgba(15,23,42,.14);padding:6px;min-width:220px;z-index:30}
+.menu button{display:block;width:100%;text-align:left;border:0;background:none;padding:9px 10px;border-radius:8px;font-size:13px}
+.menu button:hover{background:#F1F5F9}
+.menu .who{padding:8px 10px;font-size:11px;color:var(--muted);border-bottom:1px solid var(--border);margin-bottom:4px}
+
+main{padding:12px 0 96px}
+
+/* Search */
+.searchrow{display:flex;gap:8px;align-items:center}
+.search{flex:1;display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--border);border-radius:12px;padding:0 12px;height:42px}
+.search:focus-within{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+.search input{flex:1;border:0;outline:0;background:transparent;font-size:14px;min-width:0}
+.search svg{color:var(--muted);flex:none}
+.fbtn{height:42px;border:1px solid var(--border);background:#fff;border-radius:12px;padding:0 12px;display:flex;align-items:center;gap:6px;font-weight:600;color:var(--ink)}
+.fbtn.on{border-color:var(--blue);color:var(--blue)}
+.badge{background:var(--blue);color:#fff;border-radius:999px;font-size:10px;min-width:16px;height:16px;display:inline-grid;place-items:center;padding:0 4px}
+.filters{margin-top:8px;background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:12px;display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+.filters .actions{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;gap:8px}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:11px;font-weight:600;color:var(--muted)}
+label.f input,label.f select,label.f textarea{border:1px solid var(--border);border-radius:10px;padding:8px 10px;background:#fff;font-size:13px;font-weight:400;color:var(--ink);width:100%;min-width:0}
+label.f input:focus,label.f select:focus,label.f textarea:focus{outline:0;border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+label.f .hint{font-weight:400;color:var(--muted)}
+label.f .warn{font-weight:500;color:var(--amber)}
+.check{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink)}
+
+/* Browse */
+.toolbar{display:flex;align-items:center;gap:8px;margin:14px 0 8px}
+.crumbs{flex:1;display:flex;flex-wrap:wrap;align-items:center;gap:2px;font-size:12px;min-width:0}
+.crumbs button{border:0;background:none;padding:3px 6px;border-radius:6px;color:var(--blue);font-weight:600}
+.crumbs button:hover{background:rgba(37,99,235,.08)}
+.crumbs .cur{padding:3px 6px;font-weight:700;color:var(--ink)}
+.crumbs .sep{color:var(--muted)}
+.toggle{display:flex;background:#fff;border:1px solid var(--border);border-radius:10px;padding:2px}
+.toggle button{border:0;background:none;width:30px;height:28px;border-radius:8px;display:grid;place-items:center;color:var(--muted)}
+.toggle button.on{background:var(--blue-soft);color:var(--blue)}
+.sec{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:14px 2px 8px}
+
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.tile{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:12px;text-align:left;display:flex;flex-direction:column;gap:10px;transition:transform .08s,box-shadow .15s}
+.tile:hover{box-shadow:0 6px 20px rgba(15,23,42,.08);transform:translateY(-1px)}
+.ficn{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;color:#fff;flex:none}
+.tile .nm{font-weight:700;font-size:13px;line-height:1.25;word-break:break-word}
+.tile .ct,.row .ct{font-size:11px;color:var(--muted)}
+.rows{background:#fff;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.row{display:flex;align-items:center;gap:10px;padding:9px 12px;border:0;border-bottom:1px solid var(--border);background:#fff;width:100%;text-align:left}
+.row:last-child{border-bottom:0}
+.row:hover{background:#F8FAFC}
+.row .ficn{width:30px;height:30px;border-radius:8px}
+.row .nm{flex:1;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+.list{display:flex;flex-direction:column;gap:8px}
+.list.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
+.circ{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--border);border-radius:12px;padding:10px 6px 10px 12px;cursor:pointer}
+.circ:hover{border-color:#BFDBFE;box-shadow:0 4px 14px rgba(37,99,235,.08)}
+.ext{width:34px;height:40px;border-radius:7px;flex:none;display:grid;place-items:center;font-size:9px;font-weight:800;color:#fff;letter-spacing:.02em}
+.cbody{flex:1;min-width:0}
+.ctitle{font-weight:600;font-size:13px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
+.cmeta{font-size:11px;color:var(--muted);margin-top:2px;display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center}
+.tag{background:var(--amber-soft);color:var(--amber);border-radius:6px;padding:0 6px;font-weight:600;font-size:10px}
+.empty{text-align:center;color:var(--muted);padding:36px 16px;background:rgba(255,255,255,.6);border:1px dashed #CBD5E1;border-radius:var(--radius)}
+.err{background:#FEF2F2;border:1px solid #FECACA;color:#991B1B;border-radius:12px;padding:10px 12px;margin-top:10px;font-size:12px}
+.info{background:#EFF6FF;border:1px solid #BFDBFE;color:#1E3A8A;border-radius:12px;padding:10px 12px;margin-top:10px;font-size:12px;display:flex;gap:10px;align-items:center;justify-content:space-between}
+.skel{height:58px;border-radius:12px;background:linear-gradient(90deg,#fff 0%,#F1F5F9 50%,#fff 100%);background-size:200% 100%;animation:sh 1.2s infinite;border:1px solid var(--border)}
+@keyframes sh{to{background-position:-200% 0}}
+
+/* Upload */
+.panel{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:16px}
+.panel h2{margin:0 0 4px;font-size:16px;font-weight:800}
+.panel .sub{color:var(--muted);font-size:12px;margin-bottom:14px}
+.drop{border:1.5px dashed #93C5FD;border-radius:12px;background:#F8FBFF;padding:18px;text-align:center;cursor:pointer;display:block}
+.drop.over{background:#EFF6FF;border-color:var(--blue)}
+.drop .big{font-weight:700;color:var(--blue)}
+.drop .small{color:var(--muted);font-size:11px;margin-top:2px;word-break:break-all}
+.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+.formgrid .full{grid-column:1/-1}
+.preview{background:#F8FAFC;border:1px solid var(--border);border-radius:10px;padding:8px 10px;font-size:12px;word-break:break-all}
+.preview b{color:var(--muted);font-weight:600;font-size:11px;display:block}
+.btn{border:0;border-radius:12px;height:44px;padding:0 18px;font-weight:700;background:var(--blue);color:#fff;font-size:14px}
+.btn:disabled{opacity:.5;cursor:default}
+.btn.ghost{background:#fff;color:var(--ink);border:1px solid var(--border);height:38px;font-size:13px;font-weight:600}
+.btn.small{height:34px;font-size:12px;padding:0 12px;border-radius:10px}
+.bar{height:6px;background:var(--blue-soft);border-radius:99px;overflow:hidden;margin-top:10px}
+.bar div{height:100%;background:var(--blue);width:0;transition:width .2s}
+
+/* Bottom nav */
+nav.bottom{position:fixed;left:0;right:0;bottom:0;z-index:20;background:rgba(255,255,255,.96);backdrop-filter:blur(8px);border-top:1px solid var(--border);padding-bottom:env(safe-area-inset-bottom)}
+nav.bottom .wrap{display:flex;gap:8px;padding-top:6px;padding-bottom:6px}
+nav.bottom button{flex:1;border:0;background:none;border-radius:12px;padding:6px;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;font-weight:600;color:var(--muted)}
+nav.bottom button.on{color:var(--blue);background:var(--blue-soft)}
+
+/* Modal + toast */
+.scrim{position:fixed;inset:0;background:rgba(15,23,42,.35);z-index:40;display:flex;align-items:flex-end;justify-content:center;padding:16px}
+@media(min-width:640px){.scrim{align-items:center}}
+.sheet{background:#fff;border-radius:16px;width:100%;max-width:480px;max-height:88vh;overflow:auto;padding:16px;box-shadow:0 20px 50px rgba(15,23,42,.25)}
+.sheet h3{margin:0 0 10px;font-size:15px;font-weight:800;line-height:1.3}
+.kv{display:grid;grid-template-columns:110px 1fr;gap:6px 10px;font-size:12px;margin:8px 0 14px}
+.kv dt{color:var(--muted);font-weight:600}
+.kv dd{margin:0;word-break:break-word}
+.sheet .acts{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-top:12px}
+.toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 14px;border-radius:12px;font-size:12px;z-index:50;max-width:calc(100% - 32px);box-shadow:0 10px 30px rgba(15,23,42,.3)}
+
+/* Setup / sign-in */
+.center{min-height:100vh;display:grid;place-items:center;padding:24px 16px}
+.card{background:#fff;border:1px solid var(--border);border-radius:18px;padding:22px;max-width:520px;width:100%;box-shadow:0 10px 30px rgba(15,23,42,.06)}
+.card h2{margin:12px 0 4px;font-size:20px;font-weight:800}
+.card p{color:var(--muted);margin:6px 0}
+.card ol{padding-left:18px;margin:10px 0;color:var(--ink)}
+.card ol li{margin:6px 0}
+code{background:#F1F5F9;border-radius:6px;padding:1px 5px;font-size:12px;word-break:break-all}
+.gbtn{display:inline-flex;align-items:center;gap:10px;border:1px solid var(--border);background:#fff;border-radius:12px;height:44px;padding:0 18px;font-weight:600;font-size:14px;margin-top:14px}
+.gbtn:hover{background:#F8FAFC}
+
+@media(max-width:560px){
+  .formgrid{grid-template-columns:1fr}
+  .tiles{grid-template-columns:repeat(2,1fr)}
+  .status .txt{display:none}
+  .fbtn .lbl{display:none}
+}
+</style>
+</head>
+<body>
+
+<!-- Setup: first visit, no Google Web Client ID yet -->
+<div id="setup" class="center hidden">
+  <div class="card">
+    <div class="logo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h12l4 4v12H4z"/><path d="M8 10h8M8 14h8M8 18h5"/></svg></div>
+    <h2>Circular Book</h2>
+    <p>One-time setup. Paste the <b>Web Client ID</b> from Google Cloud.</p>
+    <div id="fileWarn" class="err hidden">This page was opened straight from a file. Google sign-in only works when the page is opened from a web address (https://…). See step 1 in the setup guide.</div>
+    <label class="f" style="margin-top:12px">Web Client ID
+      <input id="cidInput" placeholder="1234567890-abc123.apps.googleusercontent.com" autocomplete="off">
+    </label>
+    <p style="font-size:12px">In Google Cloud, this page's address must be listed under <b>Authorized JavaScript origins</b>:<br><code id="originShow"></code></p>
+    <button class="btn" id="cidSave" style="margin-top:10px;width:100%">Save and continue</button>
+  </div>
+</div>
+
+<!-- Sign-in: no saved list on this device yet -->
+<div id="signin" class="center hidden">
+  <div class="card" style="text-align:center">
+    <div class="logo" style="margin:0 auto"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h12l4 4v12H4z"/><path d="M8 10h8M8 14h8M8 18h5"/></svg></div>
+    <h2>Circular Book</h2>
+    <p style="margin-top:-2px;font-size:12px">by A H Mandanka</p>
+    <p>Sign in with the Google account that can open the circulars folder.</p>
+    <button class="gbtn" id="signinBtn">
+      <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C36.9 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>
+      Sign in with Google
+    </button>
+    <div id="signinErr" class="err hidden" style="text-align:left"></div>
+    <p style="font-size:11px;margin-top:14px"><a href="#" id="changeCid" style="color:var(--muted)">Change Web Client ID</a></p>
+  </div>
+</div>
+
+<!-- Main app -->
+<div id="app" class="hidden">
+  <header>
+    <div class="wrap hbar">
+      <div class="logo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h12l4 4v12H4z"/><path d="M8 10h8M8 14h8M8 18h5"/></svg></div>
+      <div class="brand"><h1>Circular Book</h1><div class="by">by A H Mandanka</div></div>
+      <div class="status" id="status"></div>
+      <button class="icon-btn" id="menuBtn" aria-label="Menu"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></button>
+    </div>
+    <div class="menu hidden" id="menu">
+      <div class="who" id="menuWho"></div>
+      <button data-act="refresh">Refresh list now</button>
+      <button data-act="needs">Details needed</button>
+      <button data-act="root">Change circular folder</button>
+      <button data-act="opendrive">Open folder in Google Drive</button>
+      <button data-act="cid">Change Web Client ID</button>
+      <button data-act="signout">Sign out</button>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <!-- Page 1: folders + search -->
+    <section id="pageBrowse">
+      <div class="searchrow">
+        <div class="search">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input id="q" type="search" placeholder="Search content, number, date, file or folder" autocomplete="off">
+        </div>
+        <button class="fbtn" id="fbtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M7 12h10M10 18h4"/></svg><span class="lbl">Filters</span><span class="badge hidden" id="fcount"></span></button>
+      </div>
+      <div class="filters hidden" id="filters">
+        <label class="f">Folder<select id="fFolder"></select></label>
+        <label class="f">Subfolder<select id="fSub"></select></label>
+        <label class="f">Circular number<input id="fNum" placeholder="e.g. FIN/12"></label>
+        <label class="f">Date from<input id="fFrom" type="date"></label>
+        <label class="f">Date to<input id="fTo" type="date"></label>
+        <label class="f">Sort by<select id="fSort"><option value="new">Newest first</option><option value="old">Oldest first</option><option value="num">Circular number</option></select></label>
+        <div class="actions">
+          <label class="check"><input type="checkbox" id="fNeeds"> Only "details needed"</label>
+          <button class="btn ghost small" id="fClear">Clear filters</button>
+        </div>
+      </div>
+      <div id="notice"></div>
+      <div id="browse"></div>
+    </section>
+
+    <!-- Page 2: upload -->
+    <section id="pageUpload" class="hidden">
+      <div class="panel">
+        <h2>Upload a circular</h2>
+        <div class="sub">The file is saved in your Google Drive folder and renamed to <b>yy mm dd Number Content</b>.</div>
+        <label class="drop" id="drop">
+          <input type="file" id="uFile" class="hidden">
+          <div class="big" id="dropBig">Choose a file</div>
+          <div class="small" id="dropSmall">or drag it here. PDF, Word, Excel, images, any size.</div>
+        </label>
+        <div class="formgrid">
+          <label class="f">Folder
+            <input id="uFolder" list="dlFolders" placeholder="Pick or type a new folder" autocomplete="off">
+            <span class="hint" id="uFolderHint">A new folder is created if it doesn't exist.</span>
+          </label>
+          <label class="f">Subfolder (optional)
+            <input id="uSub" list="dlSubs" placeholder="Pick, type a new one, or leave empty" autocomplete="off">
+            <span class="hint" id="uSubHint"></span>
+          </label>
+          <label class="f">Date of circular<input id="uDate" type="date"></label>
+          <label class="f">Circular number
+            <input id="uNum" placeholder="e.g. FIN/12/2026" autocomplete="off">
+            <span class="warn hidden" id="uNumWarn"></span>
+          </label>
+          <label class="f full">Content of circular
+            <textarea id="uContent" rows="3" placeholder="Subject or short summary, used for search"></textarea>
+          </label>
+          <div class="preview full"><b>Will be saved as</b><span id="uName">Choose a file and fill in the details</span></div>
+        </div>
+        <datalist id="dlFolders"></datalist>
+        <datalist id="dlSubs"></datalist>
+        <div id="uErr" class="err hidden"></div>
+        <div id="uProg" class="hidden"><div class="bar"><div id="uBar"></div></div><div style="font-size:11px;color:var(--muted);margin-top:4px" id="uProgTxt"></div></div>
+        <button class="btn" id="uGo" style="width:100%;margin-top:14px">Upload</button>
+      </div>
+    </section>
+  </main>
+
+  <nav class="bottom">
+    <div class="wrap">
+      <button id="navBrowse" class="on"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Circulars</button>
+      <button id="navUpload"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>Upload</button>
+    </div>
+  </nav>
+</div>
+
+<script>
+"use strict";
+/* ============================================================
+   Circular Book (web). One file, no server: talks straight to
+   Google Drive from the browser with the signed-in user's token.
+   ============================================================ */
+
+// Optional: paste the Web Client ID here so nobody has to type it.
+// Left empty, the page asks for it once and remembers it on that device.
+const CONFIG = {
+  CLIENT_ID: "",
+  ROOT_LINK: "https://drive.google.com/drive/folders/1gfss_dQq4kbq_ZxYs5C0IddHIFEhPhWT",
+};
+
+const SCOPE = "https://www.googleapis.com/auth/drive";
+const API = "https://www.googleapis.com/drive/v3";
+const UPLOAD_API = "https://www.googleapis.com/upload/drive/v3";
+const FOLDER = "application/vnd.google-apps.folder";
+const GAPPS = "application/vnd.google-apps.";
+const INDEX_NAME = "circulars-index.json";
+const ROOT_LABEL = "(Main folder)";
+const FIELDS = "id,name,mimeType,size,webViewLink,createdTime,parents,description,appProperties,version";
+const TILE_COLORS = ["#EF4444","#10B981","#3B82F6","#8B5CF6","#14B8A6","#F59E0B","#EC4899","#6366F1"];
+
+/* ---------- small helpers ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const LS = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+  del(k) { try { localStorage.removeItem(k); } catch (e) {} },
+};
+const qe = s => String(s).replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+const chunk = (a, n) => { const o = []; for (let i = 0; i < a.length; i += n) o.push(a.slice(i, i + n)); return o; };
+const lc = s => String(s || "").toLowerCase();
+const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+function fmtDate(iso) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ""); if (!m) return "";
+  return `${+m[3]} ${MONTHS[+m[2] - 1]} ${m[1]}`;
+}
+function todayIso() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; }
+function ago(t) {
+  const s = Math.round((Date.now() - t) / 1000);
+  if (s < 60) return "just now"; if (s < 3600) return Math.round(s / 60) + " min ago";
+  if (s < 86400) return Math.round(s / 3600) + " h ago"; return Math.round(s / 86400) + " d ago";
+}
+function hashColor(s) { let h = 0; for (const ch of lc(s)) h = (h * 31 + ch.charCodeAt(0)) | 0; return TILE_COLORS[Math.abs(h) % TILE_COLORS.length]; }
+function folderIdFromLink(link) {
+  const t = String(link || "").trim();
+  let m = /\/folders\/([A-Za-z0-9_-]{10,})/.exec(t); if (m) return m[1];
+  m = /[?&]id=([A-Za-z0-9_-]{10,})/.exec(t); if (m) return m[1];
+  return /^[A-Za-z0-9_-]{10,}$/.test(t) ? t : null;
+}
+async function pool(items, n, fn) {
+  const out = new Array(items.length); let i = 0;
+  await Promise.all(Array.from({ length: Math.min(n, items.length) }, async () => {
+    while (i < items.length) { const k = i++; out[k] = await fn(items[k]); }
+  }));
+  return out;
+}
+let toastTimer;
+function toast(msg, ms = 3200) {
+  let t = $(".toast"); if (!t) { t = document.createElement("div"); t.className = "toast"; document.body.appendChild(t); }
+  t.textContent = msg; t.classList.remove("hidden"); clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.add("hidden"), ms);
+}
+
+/* ---------- file names (same rules as the Android app) ---------- */
+const EXT_BY_MIME = {
+  "application/pdf":"pdf","application/msword":"doc",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document":"docx",
+  "application/vnd.ms-excel":"xls","application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":"xlsx",
+  "application/vnd.ms-powerpoint":"ppt","application/vnd.openxmlformats-officedocument.presentationml.presentation":"pptx",
+  "image/jpeg":"jpg","image/png":"png","image/webp":"webp","image/heic":"heic","text/plain":"txt",
+};
+function extOf(name) { const i = String(name).lastIndexOf("."); if (i < 0) return null; const e = name.slice(i + 1).toLowerCase(); return /^[a-z0-9]{1,5}$/.test(e) ? e : null; }
+function cleanName(s) { return String(s).replace(/[\\/:*?"<>|]/g, "-").replace(/[\x00-\x1f\x7f\s]+/g, " ").replace(/^[ .\-]+|[ .\-]+$/g, ""); }
+function shorten(s, max = 80) {
+  if (s.length <= max) return s;
+  const cut = s.slice(0, max); const sp = cut.lastIndexOf(" ");
+  const atWord = sp >= max / 2 ? cut.slice(0, sp) : cut;
+  return atWord.replace(/[ .,\-;]+$/, "");
+}
+function buildFileName(dateIso, number, content, originalName, mime) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateIso || "");
+  const datePart = m ? `${m[1].slice(2)} ${m[2]} ${m[3]}` : "";
+  const num = cleanName(number).replace(/ /g, "-");
+  const text = shorten(cleanName(content));
+  const base = [datePart, num, text].filter(Boolean).join(" ");
+  const ext = extOf(originalName || "") || EXT_BY_MIME[lc(mime)];
+  return ext ? `${base}.${ext}` : base;
+}
+// Guess date/number from names of circulars that were in Drive before the app.
+function validDate(y, m, d) {
+  y = +y; m = +m; d = +d; if (y < 1990 || y > 2100 || m < 1 || m > 12 || d < 1) return null;
+  const dt = new Date(Date.UTC(y, m - 1, d)); if (dt.getUTCDate() !== d) return null;
+  return `${y}-${String(m).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+}
+function guessFromName(fileName) {
+  const base = (extOf(fileName) ? fileName.slice(0, fileName.lastIndexOf(".")) : fileName).trim();
+  let m = /^(\d{2}) (\d{2}) (\d{2}) (\S+)(?: (.+))?$/.exec(base);
+  if (m) { const d = validDate("20" + m[1], m[2], m[3]); if (d) return { date: d, number: m[4], content: (m[5] || "").trim() }; }
+  return { date: findDate(base), number: findNumber(base), content: null };
+}
+function findDate(s) {
+  let m = /(?<!\d)(20\d{2})[-_.](\d{1,2})[-_.](\d{1,2})(?!\d)/.exec(s); if (m) { const d = validDate(m[1], m[2], m[3]); if (d) return d; }
+  m = /(?<!\d)(\d{1,2})[\s\-_.]*([A-Za-z]{3,9})[\s\-_.,]*(20\d{2})(?!\d)/.exec(s);
+  if (m) { const mi = MONTHS.map(lc).indexOf(lc(m[2]).slice(0, 3)); if (mi >= 0) { const d = validDate(m[3], mi + 1, m[1]); if (d) return d; } }
+  m = /(?<!\d)(\d{1,2})[-_./](\d{1,2})[-_./](20\d{2}|\d{2})(?!\d)/.exec(s);
+  if (m) { const y = m[3].length === 2 ? "20" + m[3] : m[3]; const d = validDate(y, m[2], m[1]); if (d) return d; }
+  m = /(?<!\d)(\d{2})(\d{2})(20\d{2})(?!\d)/.exec(s); if (m) { const d = validDate(m[3], m[2], m[1]); if (d) return d; }
+  return null;
+}
+function findNumber(s) {
+  const m = /\b(?:circular|cir|circ)?[\s._-]*no[\s._:-]*([A-Za-z0-9]+(?:[-_/][A-Za-z0-9]+)*)/i.exec(s)
+    || /\b(?:circular|cir|circ)[\s._-]*([0-9]+[A-Za-z0-9]*(?:[-_/][A-Za-z0-9]+)*)/i.exec(s);
+  if (!m) return null; const n = m[1].replace(/^[-_/]+|[-_/]+$/g, "");
+  return /\d/.test(n) ? n : null;
+}
+const normNum = s => lc(s).replace(/[\s/\-._]/g, "");
+
+/* ---------- state ---------- */
+const S = {
+  clientId: CONFIG.CLIENT_ID || LS.get("cb_client_id", ""),
+  rootId: LS.get("cb_root_id", "") || folderIdFromLink(CONFIG.ROOT_LINK),
+  rootName: LS.get("cb_root_name", ""),
+  token: null, tokenExp: 0, email: LS.get("cb_email", ""),
+  circulars: [], folders: {}, savedAt: 0,
+  loading: false, error: "",
+  page: "browse", path: [], view: LS.get("cb_view", "tile"),
+  q: "", f: { folder: "", sub: "", num: "", from: "", to: "", sort: "new", needs: false },
+  file: null, uploading: false,
+};
+(function loadToken() { const t = LS.get("cb_token", null); if (t && t.exp > Date.now()) { S.token = t.token; S.tokenExp = t.exp; } })();
+const cacheKey = () => "cb_cache_" + S.rootId;
+function loadCache() { const c = LS.get(cacheKey(), null); if (c) { S.circulars = c.circulars || []; S.folders = c.folders || {}; S.savedAt = c.savedAt || 0; } else { S.circulars = []; S.folders = {}; S.savedAt = 0; } }
+function saveCache() { LS.set(cacheKey(), { circulars: S.circulars, folders: S.folders, savedAt: S.savedAt }); }
+
+/* ---------- Google sign-in (Google Identity Services, token model) ---------- */
+class AuthError extends Error { constructor(m = "Your Google sign-in expired. Please sign in again.") { super(m); } }
+let tokenClient = null, pending = null;
+function gisReady() { return !!(window.google && google.accounts && google.accounts.oauth2); }
+function getTokenClient() {
+  if (!gisReady()) throw new Error("Google sign-in is still loading. Check your internet and try again.");
+  if (!tokenClient) tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: S.clientId, scope: SCOPE,
+    callback: r => {
+      const p = pending; pending = null; if (!p) return;
+      if (r.error) return p.rej(new Error(r.error_description || ("Google sign-in failed: " + r.error)));
+      if (!google.accounts.oauth2.hasGrantedAllScopes(r, SCOPE)) return p.rej(new Error("Please tick the Google Drive permission so the page can open your circulars."));
+      S.token = r.access_token; S.tokenExp = Date.now() + (Number(r.expires_in || 3600) - 120) * 1000;
+      LS.set("cb_token", { token: S.token, exp: S.tokenExp }); p.res(S.token);
+    },
+    error_callback: e => {
+      const p = pending; pending = null; if (!p) return;
+      p.rej(new Error(e && e.type === "popup_closed" ? "Sign-in window was closed." :
+        e && e.type === "popup_failed_to_open" ? "The browser blocked Google's sign-in window. Allow pop-ups for this page and try again." :
+        "Google sign-in failed. " + (e && e.message || "")));
+    },
+  });
+  return tokenClient;
+}
+const hasToken = () => !!S.token && Date.now() < S.tokenExp;
+// Must be called straight from a tap/click (browsers block the Google window otherwise).
+function signIn(prompt = "") {
+  return new Promise((res, rej) => {
+    try { const tc = getTokenClient(); pending = { res, rej }; tc.requestAccessToken({ prompt, hint: S.email || undefined }); }
+    catch (e) { rej(e); }
+  });
+}
+function ensureSignedIn() { return hasToken() ? Promise.resolve(S.token) : signIn(""); }
+function forgetToken() { S.token = null; S.tokenExp = 0; LS.del("cb_token"); }
+
+/* ---------- Google Drive API ---------- */
+function friendly(status, msg) {
+  if (status === 401) return "Your Google sign-in expired. Please sign in again.";
+  if (status === 403) {
+    if (/has not been used|disabled/i.test(msg)) return "The Google Drive API isn't turned on in your Google Cloud project yet.";
+    if (/insufficient|scope/i.test(msg)) return "Google Drive permission wasn't given. Sign out, sign in again and tick the Drive box.";
+    return "This Google account can't open or change that folder." + (msg ? ` (${msg})` : "");
+  }
+  if (status === 404) return "Not found in Google Drive. It may have been moved or deleted.";
+  return `Google Drive error ${status}` + (msg ? `: ${msg}` : "");
+}
+async function api(url, opts = {}) {
+  if (!hasToken()) throw new AuthError();
+  let r;
+  try { r = await fetch(url, { ...opts, headers: { ...(opts.headers || {}), Authorization: "Bearer " + S.token } }); }
+  catch (e) { throw new Error("Can't reach Google Drive. Check your internet connection."); }
+  if (r.status === 401) { forgetToken(); throw new AuthError(); }
+  if (!r.ok) { let msg = ""; try { msg = (await r.json()).error.message; } catch (e) {} throw new Error(friendly(r.status, msg)); }
+  return r;
+}
+const filesUrl = (id, params = {}) => {
+  const u = new URL(API + "/files" + (id ? "/" + encodeURIComponent(id) : ""));
+  u.searchParams.set("supportsAllDrives", "true");
+  for (const [k, v] of Object.entries(params)) u.searchParams.set(k, v);
+  return u.toString();
+};
+async function query(q, orderBy) {
+  const out = []; let page = null;
+  do {
+    const p = { q, fields: `nextPageToken,files(${FIELDS})`, pageSize: "1000", includeItemsFromAllDrives: "true" };
+    if (orderBy) p.orderBy = orderBy; if (page) p.pageToken = page;
+    const j = await (await api(filesUrl("", p))).json();
+    out.push(...(j.files || [])); page = j.nextPageToken;
+  } while (page);
+  return out;
+}
+async function resolveRoot(id) {
+  const f = await (await api(filesUrl(id, { fields: "id,name,mimeType" }))).json();
+  if (f.mimeType !== FOLDER) throw new Error("That link points to a file, not a folder.");
+  return f;
+}
+
+// Walks the whole folder tree level by level. Each request asks for the contents of up to
+// 40 folders at once, and up to 6 requests run together, so even big trees load in a few seconds.
+async function scanTree(rootId) {
+  const folders = {}, files = [];
+  let frontier = [rootId];
+  for (let depth = 0; frontier.length && depth < 8; depth++) {
+    const set = new Set(frontier);
+    const lists = await pool(chunk(frontier, 40), 6, ids =>
+      query("(" + ids.map(id => `'${qe(id)}' in parents`).join(" or ") + ") and trashed = false"));
+    const next = [];
+    for (const f of lists.flat()) {
+      const parent = (f.parents || []).find(p => set.has(p)) || frontier[0];
+      if (f.mimeType === FOLDER) { if (!folders[f.id]) { folders[f.id] = { name: f.name, parent }; next.push(f.id); } }
+      else files.push({ ...f, _parent: parent });
+    }
+    frontier = next;
+  }
+  return { folders, files };
+}
+function pathOf(folderId, folders = S.folders) {
+  const names = []; let id = folderId, guard = 0;
+  while (id && id !== S.rootId && folders[id] && guard++ < 20) { names.unshift(folders[id].name); id = folders[id].parent; }
+  return names;
+}
+const shownMime = m => (m || "").startsWith(GAPPS) ? "application/pdf" : (m || "application/octet-stream");
+function fileToCircular(f) {
+  const path = pathOf(f._parent);
+  const g = guessFromName(f.name);
+  const ap = f.appProperties || {};
+  const typed = !!(ap.circularNumber || ap.circularDate);
+  return {
+    driveItemId: f.id, fileName: f.name,
+    folder: path[0] || ROOT_LABEL, subfolder: path.slice(1).join(" / "),
+    circularDate: ap.circularDate || g.date || "",
+    circularNumber: ap.circularNumber || g.number || "",
+    content: (typed && f.description) || g.content || f.name.replace(/\.[A-Za-z0-9]{1,5}$/, "").replace(/_/g, " "),
+    mimeType: shownMime(f.mimeType), sizeBytes: Number(f.size || 0), webUrl: f.webViewLink || "",
+    uploadedAt: f.createdTime || "", needsDetails: !(typed || g.content),
+  };
+}
+// Index entries win (typed details); Drive decides where a file is now and what it's called.
+function mergeCirculars(indexed, scanned) {
+  const byId = new Map(scanned.map(c => [c.driveItemId, c]));
+  const fromIndex = indexed.filter(c => byId.has(c.driveItemId)).map(c => {
+    const now = byId.get(c.driveItemId);
+    return { ...c, folder: now.folder, subfolder: now.subfolder, fileName: now.fileName, webUrl: now.webUrl };
+  });
+  const known = new Set(fromIndex.map(c => c.driveItemId));
+  return fromIndex.concat(scanned.filter(c => !known.has(c.driveItemId)));
+}
+
+/* ---------- shared index file (circulars-index.json, same as the Android app) ---------- */
+async function findIndexFile() {
+  const l = await query(`'${qe(S.rootId)}' in parents and name = '${INDEX_NAME}' and trashed = false`, "createdTime");
+  return l[0] || null;
+}
+async function readIndex() {
+  const f = await findIndexFile();
+  if (!f) return { data: { version: 1, circulars: [] }, tag: null, id: null };
+  const text = await (await api(filesUrl(f.id, { alt: "media" }))).text();
+  let data;
+  try { data = text.trim() ? JSON.parse(text) : { version: 1, circulars: [] }; }
+  catch (e) { throw new Error("The circular list file (circulars-index.json) is damaged, so it wasn't read."); }
+  if (!Array.isArray(data.circulars)) data.circulars = [];
+  return { data, tag: f.id + ":" + f.version, id: f.id };
+}
+async function updateIndex(change) {
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const snap = await readIndex();
+    const next = { ...snap.data, version: snap.data.version || 1, circulars: change(snap.data.circulars) };
+    const cur = await findIndexFile();
+    const tag = cur ? cur.id + ":" + cur.version : null;
+    if (tag !== snap.tag) continue; // another device saved in between; read again
+    let id = cur && cur.id;
+    if (!id) {
+      const r = await api(filesUrl("", { fields: "id" }), { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: INDEX_NAME, mimeType: "application/json", parents: [S.rootId] }) });
+      id = (await r.json()).id;
+    }
+    await api(`${UPLOAD_API}/files/${encodeURIComponent(id)}?uploadType=media&supportsAllDrives=true`,
+      { method: "PATCH", headers: { "Content-Type": "application/json; charset=UTF-8" }, body: JSON.stringify(next, null, 2) });
+    return;
+  }
+  throw new Error("The circular list kept changing on another device. Please try again.");
+}
+
+/* ---------- loading the list: cache first, Drive in the background ---------- */
+async function refresh(opts = {}) {
+  if (S.loading) return;
+  if (!hasToken()) { renderStatus(); return; }
+  S.loading = true; S.error = ""; renderStatus(); renderNotice(); if (!S.circulars.length) renderBrowse();
+  try {
+    if (!S.rootName || opts.root) {
+      const r = await resolveRoot(S.rootId); S.rootName = r.name; LS.set("cb_root_name", r.name);
+    }
+    const [tree, idx] = await Promise.all([scanTree(S.rootId), readIndex()]);
+    S.folders = tree.folders;
+    const scanned = tree.files.filter(f => !(f.name === INDEX_NAME && f._parent === S.rootId)).map(fileToCircular);
+    S.circulars = mergeCirculars(idx.data.circulars, scanned);
+    S.savedAt = Date.now(); saveCache();
+  } catch (e) {
+    S.error = e.message || String(e);
+  } finally {
+    S.loading = false; renderAll();
+  }
+}
+
+/* ---------- search + folder browsing ---------- */
+const isSearching = () => !!(S.q.trim() || S.f.folder || S.f.sub || S.f.num.trim() || S.f.from || S.f.to || S.f.needs);
+function filterCount() { const f = S.f; return [f.folder, f.sub, f.num.trim(), f.from, f.to, f.needs].filter(Boolean).length; }
+function search() {
+  const words = lc(S.q).split(/\s+/).filter(Boolean);
+  const needle = normNum(S.f.num);
+  const hits = S.circulars.filter(c => {
+    if (S.f.folder && lc(c.folder) !== lc(S.f.folder)) return false;
+    if (S.f.sub && lc(c.subfolder) !== lc(S.f.sub)) return false;
+    if (S.f.needs && !c.needsDetails) return false;
+    if ((S.f.from || S.f.to) && (!c.circularDate || (S.f.from && c.circularDate < S.f.from) || (S.f.to && c.circularDate > S.f.to))) return false;
+    if (needle && !normNum(c.circularNumber).includes(needle)) return false;
+    if (!words.length) return true;
+    const hay = lc([c.content, c.circularNumber, c.fileName, c.folder, c.subfolder, c.circularDate, fmtDate(c.circularDate)].join(" | "));
+    const hayNum = normNum(c.circularNumber);
+    return words.every(w => hay.includes(w) || (normNum(w) && hayNum.includes(normNum(w))));
+  });
+  return sortCirculars(hits, S.f.sort);
+}
+function sortCirculars(list, sort = "new") {
+  const a = list.slice();
+  if (sort === "num") return a.sort((x, y) => lc(x.circularNumber).localeCompare(lc(y.circularNumber), undefined, { numeric: true }));
+  return a.sort((x, y) => {
+    if (!x.circularDate !== !y.circularDate) return x.circularDate ? -1 : 1; // undated last
+    return sort === "old" ? x.circularDate.localeCompare(y.circularDate) : y.circularDate.localeCompare(x.circularDate);
+  });
+}
+const locOf = c => [c.folder].concat(String(c.subfolder || "").split(" / ").map(s => s.trim()).filter(Boolean));
+const startsWithPath = (loc, path) => loc.length >= path.length && path.every((p, i) => lc(loc[i]) === lc(p));
+function folderIdAt(path) {
+  let id = S.rootId;
+  for (const name of path) {
+    const hit = Object.entries(S.folders).find(([fid, f]) => f.parent === id && lc(f.name) === lc(name));
+    if (!hit) return null; id = hit[0];
+  }
+  return id;
+}
+function childFolders(path) {
+  const counts = new Map(); // lc name -> {name,count}
+  for (const c of S.circulars) {
+    const loc = locOf(c);
+    if (loc.length > path.length && startsWithPath(loc, path)) {
+      const k = lc(loc[path.length]); const e = counts.get(k) || { name: loc[path.length], count: 0 }; e.count++; counts.set(k, e);
+    }
+  }
+  const pid = folderIdAt(path); // also show empty folders
+  if (pid) for (const f of Object.values(S.folders)) if (f.parent === pid && !counts.has(lc(f.name))) counts.set(lc(f.name), { name: f.name, count: 0 });
+  return [...counts.values()].sort((a, b) => lc(a.name).localeCompare(lc(b.name), undefined, { numeric: true }));
+}
+function filesAt(path) {
+  if (!path.length) return [];
+  return sortCirculars(S.circulars.filter(c => { const l = locOf(c); return l.length === path.length && startsWithPath(l, path); }));
+}
+
+/* ---------- rendering ---------- */
+const ICON = {
+  folder: '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M3 7a2 2 0 0 1 2-2h4.2a2 2 0 0 1 1.4.6L12 7h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>',
+  dl: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4v11M7 10l5 5 5-5"/><path d="M5 20h14"/></svg>',
+  more: '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg>',
+  tile: '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg>',
+  list: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg>',
+};
+function extBadge(c) {
+  const e = (extOf(c.fileName) || (EXT_BY_MIME[c.mimeType] || "file")).toUpperCase().slice(0, 4);
+  const col = { PDF: "#EF4444", DOC: "#2563EB", DOCX: "#2563EB", XLS: "#10B981", XLSX: "#10B981", PPT: "#F59E0B", PPTX: "#F59E0B", JPG: "#8B5CF6", JPEG: "#8B5CF6", PNG: "#8B5CF6" }[e] || "#64748B";
+  return `<div class="ext" style="background:${col}">${esc(e)}</div>`;
+}
+function circCard(c, showPlace) {
+  const place = showPlace ? [c.folder, ...String(c.subfolder || "").split(" / ").filter(Boolean)].join(" › ") : "";
+  return `<div class="circ" data-id="${esc(c.driveItemId)}" title="${esc(c.fileName)}">
+    ${extBadge(c)}
+    <div class="cbody"><div class="ctitle">${esc(c.content || c.fileName)}</div>
+      <div class="cmeta">${c.circularDate ? `<span>${esc(fmtDate(c.circularDate))}</span>` : `<span>No date</span>`}
+      ${place ? `<span>${esc(place)}</span>` : ""}${c.needsDetails ? `<span class="tag">Details needed</span>` : ""}</div></div>
+    <button class="icon-btn" data-dl="${esc(c.driveItemId)}" title="Download" aria-label="Download">${ICON.dl}</button>
+    <button class="icon-btn" data-more="${esc(c.driveItemId)}" title="Details" aria-label="Details">${ICON.more}</button>
+  </div>`;
+}
+function renderBrowse() {
+  const el = $("#browse");
+  if (!S.circulars.length && !Object.keys(S.folders).length) {
+    el.innerHTML = S.loading
+      ? `<div class="sec">Loading circulars from Google Drive…</div><div class="list">${'<div class="skel"></div>'.repeat(5)}</div>`
+      : `<div class="empty" style="margin-top:14px">No circulars yet. Use <b>Upload</b> below to add the first one.</div>`;
+    return;
+  }
+  if (isSearching()) {
+    const hits = search(); const max = 300;
+    el.innerHTML = `<div class="sec">${hits.length} circular${hits.length === 1 ? "" : "s"} found</div>` +
+      (hits.length ? `<div class="list ${S.view === "tile" ? "grid" : ""}">${hits.slice(0, max).map(c => circCard(c, true)).join("")}</div>` +
+        (hits.length > max ? `<div class="empty" style="margin-top:8px">Showing the first ${max}. Type more words to narrow it down.</div>` : "")
+        : `<div class="empty">Nothing matches. Try fewer words or clear the filters.</div>`);
+    return;
+  }
+  const path = S.path, kids = childFolders(path), files = filesAt(path);
+  const crumbs = [`<button data-crumb="0">All folders</button>`].concat(path.map((p, i) =>
+    `<span class="sep">›</span>` + (i === path.length - 1 ? `<span class="cur">${esc(p)}</span>` : `<button data-crumb="${i + 1}">${esc(p)}</button>`))).join("");
+  let h = `<div class="toolbar"><div class="crumbs">${crumbs}</div>
+    <div class="toggle"><button data-view="tile" class="${S.view === "tile" ? "on" : ""}" title="Tiles">${ICON.tile}</button><button data-view="list" class="${S.view === "list" ? "on" : ""}" title="List">${ICON.list}</button></div></div>`;
+  if (kids.length) {
+    h += `<div class="sec">${path.length ? "Subfolders" : "Folders"}</div>`;
+    const cnt = k => `${k.count} circular${k.count === 1 ? "" : "s"}`;
+    h += S.view === "tile"
+      ? `<div class="tiles">${kids.map(k => `<button class="tile" data-open="${esc(k.name)}"><div class="ficn" style="background:${hashColor(k.name)}">${ICON.folder}</div><div><div class="nm">${esc(k.name)}</div><div class="ct">${cnt(k)}</div></div></button>`).join("")}</div>`
+      : `<div class="rows">${kids.map(k => `<button class="row" data-open="${esc(k.name)}"><div class="ficn" style="background:${hashColor(k.name)}">${ICON.folder}</div><div class="nm">${esc(k.name)}</div><div class="ct">${cnt(k)}</div></button>`).join("")}</div>`;
+  }
+  if (files.length) {
+    h += `<div class="sec">Circulars</div><div class="list ${S.view === "tile" ? "grid" : ""}">${files.map(c => circCard(c, false)).join("")}</div>`;
+  }
+  if (!kids.length && !files.length) h += `<div class="empty">This folder is empty.</div>`;
+  el.innerHTML = h;
+}
+function renderStatus() {
+  const el = $("#status");
+  if (S.loading) el.innerHTML = `<div class="spin"></div><span class="txt">Updating…</span>`;
+  else if (!hasToken()) el.innerHTML = `<button class="chip primary" id="chipSignin">Sign in</button>`;
+  else el.innerHTML = S.savedAt ? `<span class="txt">Updated ${ago(S.savedAt)}</span>` : "";
+  $("#menuWho").textContent = (S.email ? S.email + " · " : "") + (S.rootName ? "Folder: " + S.rootName : "");
+}
+function renderNotice() {
+  const el = $("#notice");
+  if (S.error) el.innerHTML = `<div class="err">${esc(S.error)}</div>`;
+  else if (!hasToken() && S.circulars.length) el.innerHTML = `<div class="info"><span>Showing the list saved on this device${S.savedAt ? " (" + ago(S.savedAt) + ")" : ""}. Sign in to get the latest and to upload.</span><button class="chip primary" id="noticeSignin">Sign in</button></div>`;
+  else el.innerHTML = "";
+}
+function renderFilters() {
+  const folders = [...new Set(S.circulars.map(c => c.folder).filter(Boolean))].sort((a, b) => lc(a).localeCompare(lc(b)));
+  const subs = [...new Set(S.circulars.filter(c => !S.f.folder || lc(c.folder) === lc(S.f.folder)).map(c => c.subfolder).filter(Boolean))].sort((a, b) => lc(a).localeCompare(lc(b)));
+  $("#fFolder").innerHTML = `<option value="">Any folder</option>` + folders.map(f => `<option ${f === S.f.folder ? "selected" : ""}>${esc(f)}</option>`).join("");
+  $("#fSub").innerHTML = `<option value="">Any subfolder</option>` + subs.map(f => `<option ${f === S.f.sub ? "selected" : ""}>${esc(f)}</option>`).join("");
+  const n = filterCount(); $("#fcount").textContent = n; $("#fcount").classList.toggle("hidden", !n); $("#fbtn").classList.toggle("on", n > 0);
+}
+function renderUploadLists() {
+  const top = new Map();
+  for (const f of Object.values(S.folders)) if (f.parent === S.rootId) top.set(lc(f.name), f.name);
+  for (const c of S.circulars) if (c.folder && c.folder !== ROOT_LABEL && !top.has(lc(c.folder))) top.set(lc(c.folder), c.folder);
+  $("#dlFolders").innerHTML = [...top.values()].sort((a, b) => lc(a).localeCompare(lc(b))).map(n => `<option value="${esc(n)}">`).join("");
+  const folder = $("#uFolder").value.trim(); const subs = new Map();
+  if (folder) {
+    const fid = folderIdAt([folder]);
+    if (fid) for (const f of Object.values(S.folders)) if (f.parent === fid) subs.set(lc(f.name), f.name);
+    for (const c of S.circulars) if (lc(c.folder) === lc(folder) && c.subfolder && !subs.has(lc(c.subfolder))) subs.set(lc(c.subfolder), c.subfolder);
+  }
+  $("#dlSubs").innerHTML = [...subs.values()].sort((a, b) => lc(a).localeCompare(lc(b))).map(n => `<option value="${esc(n)}">`).join("");
+  $("#uFolderHint").textContent = folder && !top.has(lc(folder)) ? `New folder "${folder}" will be created.` : "Pick an existing folder or type a new name.";
+  const sub = $("#uSub").value.trim();
+  $("#uSubHint").textContent = sub && !subs.has(lc(sub)) ? `New subfolder "${sub}" will be created.` : "";
+  updateUploadPreview();
+}
+function updateUploadPreview() {
+  const num = $("#uNum").value.trim(), content = $("#uContent").value.trim(), date = $("#uDate").value;
+  $("#uName").textContent = S.file && (num || content)
+    ? buildFileName(date, num, content, S.file.name, S.file.type) : "Choose a file and fill in the details";
+  const dup = num ? S.circulars.filter(c => c.circularNumber && normNum(c.circularNumber) === normNum(num)) : [];
+  const w = $("#uNumWarn");
+  w.classList.toggle("hidden", !dup.length);
+  if (dup.length) w.textContent = `Number already used: "${dup[0].content}" (${fmtDate(dup[0].circularDate) || "no date"}, ${dup[0].folder}).`;
+}
+function renderAll() { renderStatus(); renderNotice(); renderFilters(); renderBrowse(); renderUploadLists(); }
+function showScreen(which) {
+  for (const id of ["setup", "signin", "app"]) $("#" + id).classList.toggle("hidden", id !== which);
+}
+function setPage(p) {
+  S.page = p;
+  $("#pageBrowse").classList.toggle("hidden", p !== "browse"); $("#pageUpload").classList.toggle("hidden", p !== "upload");
+  $("#navBrowse").classList.toggle("on", p === "browse"); $("#navUpload").classList.toggle("on", p === "upload");
+  window.scrollTo(0, 0);
+}
+
+/* ---------- modal ---------- */
+function modal(html, onMount) {
+  const sc = document.createElement("div"); sc.className = "scrim";
+  sc.innerHTML = `<div class="sheet" role="dialog">${html}</div>`;
+  const close = () => sc.remove();
+  sc.addEventListener("click", e => { if (e.target === sc || e.target.closest("[data-close]")) close(); });
+  document.body.appendChild(sc); onMount && onMount(sc, close);
+  return close;
+}
+const byId = id => S.circulars.find(c => c.driveItemId === id);
+function showDetails(c) {
+  modal(`<h3>${esc(c.content || c.fileName)}</h3>
+    <dl class="kv"><dt>Date</dt><dd>${esc(fmtDate(c.circularDate) || "Not set")}</dd>
+    <dt>Circular number</dt><dd>${esc(c.circularNumber || "Not set")}</dd>
+    <dt>Folder</dt><dd>${esc(c.folder)}</dd><dt>Subfolder</dt><dd>${esc(c.subfolder || "None")}</dd>
+    <dt>File name</dt><dd>${esc(c.fileName)}</dd>${c.sizeBytes ? `<dt>Size</dt><dd>${(c.sizeBytes / 1048576).toFixed(c.sizeBytes > 1048576 ? 1 : 2)} MB</dd>` : ""}</dl>
+    ${c.needsDetails ? `<div class="info" style="margin:0 0 8px"><span>This file was already in Drive. The date and number were guessed from its name. Use <b>Edit details</b> to correct them.</span></div>` : ""}
+    <div class="acts"><button class="btn ghost small" data-act="edit">Edit details</button><button class="btn ghost small" data-act="dl">Download</button><button class="btn small" data-act="view">View</button></div>`,
+    (sc, close) => sc.addEventListener("click", e => {
+      const a = e.target.closest("[data-act]"); if (!a) return;
+      if (a.dataset.act === "view") { viewCircular(c); close(); }
+      if (a.dataset.act === "dl") { downloadCircular(c); close(); }
+      if (a.dataset.act === "edit") { close(); editDetails(c); }
+    }));
+}
+function editDetails(c) {
+  modal(`<h3>Edit details</h3>
+    <div style="display:grid;gap:10px">
+      <label class="f">Date of circular<input type="date" id="eDate" value="${esc(c.circularDate)}"></label>
+      <label class="f">Circular number<input id="eNum" value="${esc(c.circularNumber)}"></label>
+      <label class="f">Content of circular<textarea id="eContent" rows="3">${esc(c.content)}</textarea></label>
+      <label class="check"><input type="checkbox" id="eRename"> Also rename the file to "yy mm dd Number Content"</label>
+      <div class="err hidden" id="eErr"></div>
+    </div>
+    <div class="acts"><button class="btn ghost small" data-close>Cancel</button><button class="btn small" id="eSave">Save</button></div>`,
+    (sc, close) => {
+      sc.querySelector("#eSave").addEventListener("click", async () => {
+        const date = sc.querySelector("#eDate").value, num = sc.querySelector("#eNum").value.trim(), content = sc.querySelector("#eContent").value.trim();
+        const rename = sc.querySelector("#eRename").checked; const err = sc.querySelector("#eErr"); const btn = sc.querySelector("#eSave");
+        btn.disabled = true; btn.textContent = "Saving…"; err.classList.add("hidden");
+        try {
+          await ensureSignedIn();
+          const upd = { ...c, circularDate: date, circularNumber: num, content, needsDetails: false };
+          const meta = { description: content, appProperties: { circularNumber: fitProp("circularNumber", num), circularDate: date } };
+          if (rename) meta.name = buildFileName(date, num, content, c.fileName, c.mimeType);
+          const f = await (await api(filesUrl(c.driveItemId, { fields: FIELDS }), { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(meta) })).json();
+          upd.fileName = f.name || upd.fileName;
+          await updateIndex(list => list.filter(x => x.driveItemId !== c.driveItemId).concat(upd));
+          S.circulars = S.circulars.map(x => x.driveItemId === c.driveItemId ? upd : x); saveCache(); renderAll();
+          close(); toast("Details saved");
+        } catch (e) { err.textContent = e.message; err.classList.remove("hidden"); btn.disabled = false; btn.textContent = "Save"; if (e instanceof AuthError) renderStatus(); }
+      });
+    });
+}
+function fitProp(key, v) { v = String(v || ""); const enc = new TextEncoder(); while (enc.encode(key + v).length > 124) v = v.slice(0, -1); return v; }
+
+/* ---------- view / download ---------- */
+function viewCircular(c) {
+  // Google Drive's own viewer: opens instantly, works for PDF, Word, images, etc.
+  window.open(c.webUrl || `https://drive.google.com/file/d/${encodeURIComponent(c.driveItemId)}/view`, "_blank", "noopener");
+}
+async function downloadCircular(c) {
+  try {
+    await ensureSignedIn();
+    toast("Downloading " + c.fileName + "…", 60000);
+    const m = await (await api(filesUrl(c.driveItemId, { fields: "mimeType,name" }))).json();
+    const isG = (m.mimeType || "").startsWith(GAPPS);
+    const url = isG ? `${API}/files/${encodeURIComponent(c.driveItemId)}/export?mimeType=application%2Fpdf` : filesUrl(c.driveItemId, { alt: "media" });
+    const blob = await (await api(url)).blob();
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = isG ? m.name + ".pdf" : m.name;
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+    toast("Downloaded " + a.download);
+  } catch (e) { toast(e.message, 5000); if (e instanceof AuthError) renderAll(); }
+}
+
+/* ---------- upload ---------- */
+async function ensureFolderPath(names) {
+  let id = S.rootId;
+  for (const name of names) {
+    let hit = Object.entries(S.folders).find(([, f]) => f.parent === id && lc(f.name) === lc(name));
+    let fid = hit && hit[0];
+    if (!fid) {
+      const found = (await query(`'${qe(id)}' in parents and mimeType = '${FOLDER}' and trashed = false`, "createdTime")).find(f => lc(f.name) === lc(name));
+      if (found) fid = found.id;
+      else {
+        const r = await api(filesUrl("", { fields: "id,name" }), { method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, mimeType: FOLDER, parents: [id] }) });
+        fid = (await r.json()).id;
+      }
+      S.folders[fid] = { name: found ? found.name : name, parent: id };
+    }
+    id = fid;
+  }
+  return id;
+}
+async function uploadToDrive(file, parentId, name, description, props, onProgress) {
+  const mime = file.type || "application/octet-stream";
+  const meta = { name, mimeType: mime, parents: [parentId], description, appProperties: props };
+  const start = await api(`${UPLOAD_API}/files?uploadType=resumable&supportsAllDrives=true&fields=${encodeURIComponent(FIELDS)}`, {
+    method: "POST", headers: { "Content-Type": "application/json; charset=UTF-8", "X-Upload-Content-Type": mime }, body: JSON.stringify(meta) });
+  const session = start.headers.get("Location");
+  if (!session) throw new Error("Google Drive did not start the upload. Please try again.");
+  return new Promise((res, rej) => {
+    const x = new XMLHttpRequest(); x.open("PUT", session);
+    x.upload.onprogress = e => { if (e.lengthComputable) onProgress(e.loaded / e.total); };
+    x.onload = () => { if (x.status >= 200 && x.status < 300) { try { res(JSON.parse(x.responseText)); } catch (e) { rej(new Error("Upload finished but Drive's answer was unreadable.")); } } else rej(new Error("Upload failed: " + friendly(x.status, ""))); };
+    x.onerror = () => rej(new Error("Upload failed. Check your internet connection and try again."));
+    x.send(file);
+  });
+}
+function setFile(f) {
+  S.file = f || null;
+  $("#dropBig").textContent = f ? f.name : "Choose a file";
+  $("#dropSmall").textContent = f ? `${(f.size / 1048576).toFixed(2)} MB · tap to choose another` : "or drag it here. PDF, Word, Excel, images, any size.";
+  updateUploadPreview();
+}
+async function doUpload() {
+  const err = $("#uErr"); err.classList.add("hidden");
+  const folder = $("#uFolder").value.trim(), sub = $("#uSub").value.trim(), date = $("#uDate").value,
+        num = $("#uNum").value.trim(), content = $("#uContent").value.trim();
+  const problem = !S.file ? "Choose a file first." : !folder ? "Pick or type a folder." : folder.includes("/") ? "A folder name can't contain /." :
+    !date ? "Pick the date of the circular." : !num ? "Type the circular number." : !content ? "Type the content of the circular." : "";
+  if (problem) { err.textContent = problem; err.classList.remove("hidden"); return; }
+  if (S.uploading) return;
+  const signing = ensureSignedIn(); // straight from the tap, so the Google window isn't blocked
+  S.uploading = true; const btn = $("#uGo"); btn.disabled = true; btn.textContent = "Uploading…";
+  $("#uProg").classList.remove("hidden"); $("#uBar").style.width = "0%"; $("#uProgTxt").textContent = "Preparing…";
+  try {
+    await signing; renderStatus();
+    // Use the folder's real spelling if it already exists in a different case.
+    const realFolder = (Object.values(S.folders).find(f => f.parent === S.rootId && lc(f.name) === lc(folder)) || {}).name || folder;
+    const subParts = sub.split("/").map(s => s.trim()).filter(Boolean);
+    const parentId = await ensureFolderPath([realFolder, ...subParts]);
+    const realSubs = pathOf(parentId).slice(1);
+    const name = buildFileName(date, num, content, S.file.name, S.file.type);
+    $("#uProgTxt").textContent = "Uploading " + name;
+    const f = await uploadToDrive(S.file, parentId, name, content,
+      { circularNumber: fitProp("circularNumber", num), circularDate: date },
+      p => { $("#uBar").style.width = Math.round(p * 100) + "%"; $("#uProgTxt").textContent = `Uploading ${name} · ${Math.round(p * 100)}%`; });
+    const entry = {
+      driveItemId: f.id, fileName: f.name, folder: pathOf(parentId)[0] || realFolder, subfolder: realSubs.join(" / "),
+      circularDate: date, circularNumber: num, content, mimeType: shownMime(f.mimeType),
+      sizeBytes: Number(f.size || S.file.size), webUrl: f.webViewLink || "", uploadedAt: new Date().toISOString(), needsDetails: false,
+    };
+    S.circulars = S.circulars.filter(c => c.driveItemId !== entry.driveItemId).concat(entry); S.savedAt = S.savedAt || Date.now(); saveCache();
+    $("#uProgTxt").textContent = "Saving to the circular list…";
+    try { await updateIndex(list => list.filter(c => c.driveItemId !== entry.driveItemId).concat(entry)); }
+    catch (e) { toast("Uploaded, but the shared list wasn't updated: " + e.message + " The details are kept on the file, so it still shows up.", 7000); }
+    toast("Uploaded as " + f.name, 4500);
+    setFile(null); $("#uFile").value = ""; $("#uNum").value = ""; $("#uContent").value = ""; $("#uDate").value = todayIso();
+    $("#uProg").classList.add("hidden"); renderAll();
+  } catch (e) {
+    err.textContent = e.message || String(e); err.classList.remove("hidden"); $("#uProg").classList.add("hidden");
+    if (e instanceof AuthError) renderAll();
+  } finally { S.uploading = false; btn.disabled = false; btn.textContent = "Upload"; }
+}
+
+/* ---------- events ---------- */
+function bind() {
+  // Setup
+  $("#cidSave").addEventListener("click", () => {
+    const v = $("#cidInput").value.trim();
+    if (!/\.apps\.googleusercontent\.com$/.test(v)) { toast("That doesn't look like a Client ID. It ends with .apps.googleusercontent.com"); return; }
+    S.clientId = v; LS.set("cb_client_id", v); tokenClient = null; start();
+  });
+  $("#changeCid").addEventListener("click", e => { e.preventDefault(); openSetup(); });
+  $("#signinBtn").addEventListener("click", async () => {
+    $("#signinErr").classList.add("hidden");
+    try { await signIn(S.circulars.length ? "" : "select_account"); afterSignIn(); }
+    catch (e) { $("#signinErr").textContent = e.message; $("#signinErr").classList.remove("hidden"); }
+  });
+  document.addEventListener("click", async e => {
+    if (e.target.closest("#chipSignin, #noticeSignin")) {
+      try { await signIn(""); afterSignIn(); } catch (er) { toast(er.message, 5000); }
+    }
+  });
+  // Menu
+  $("#menuBtn").addEventListener("click", e => { e.stopPropagation(); $("#menu").classList.toggle("hidden"); });
+  document.addEventListener("click", e => { if (!e.target.closest("#menu")) $("#menu").classList.add("hidden"); });
+  $("#menu").addEventListener("click", async e => {
+    const a = e.target.closest("[data-act]"); if (!a) return; $("#menu").classList.add("hidden");
+    const act = a.dataset.act;
+    if (act === "refresh") { try { await ensureSignedIn(); refresh(); } catch (er) { toast(er.message, 5000); } }
+    if (act === "needs") { setPage("browse"); S.f.needs = true; $("#fNeeds").checked = true; $("#filters").classList.remove("hidden"); renderFilters(); renderBrowse(); }
+    if (act === "opendrive") window.open("https://drive.google.com/drive/folders/" + encodeURIComponent(S.rootId), "_blank", "noopener");
+    if (act === "cid") openSetup();
+    if (act === "root") changeRoot();
+    if (act === "signout") {
+      if (S.token && gisReady()) try { google.accounts.oauth2.revoke(S.token, () => {}); } catch (er) {}
+      forgetToken(); LS.del("cb_email"); LS.del(cacheKey()); S.email = ""; S.circulars = []; S.folders = {}; S.savedAt = 0; start();
+    }
+  });
+  // Pages
+  $("#navBrowse").addEventListener("click", () => setPage("browse"));
+  $("#navUpload").addEventListener("click", () => { setPage("upload"); renderUploadLists(); });
+  // Search + filters
+  let qt; $("#q").addEventListener("input", e => { clearTimeout(qt); qt = setTimeout(() => { S.q = e.target.value; renderBrowse(); }, 120); });
+  $("#fbtn").addEventListener("click", () => $("#filters").classList.toggle("hidden"));
+  $("#fFolder").addEventListener("change", e => { S.f.folder = e.target.value; S.f.sub = ""; renderFilters(); renderBrowse(); });
+  $("#fSub").addEventListener("change", e => { S.f.sub = e.target.value; renderFilters(); renderBrowse(); });
+  $("#fNum").addEventListener("input", e => { S.f.num = e.target.value; renderFilters(); renderBrowse(); });
+  $("#fFrom").addEventListener("change", e => { S.f.from = e.target.value; renderFilters(); renderBrowse(); });
+  $("#fTo").addEventListener("change", e => { S.f.to = e.target.value; renderFilters(); renderBrowse(); });
+  $("#fSort").addEventListener("change", e => { S.f.sort = e.target.value; renderBrowse(); });
+  $("#fNeeds").addEventListener("change", e => { S.f.needs = e.target.checked; renderFilters(); renderBrowse(); });
+  $("#fClear").addEventListener("click", () => {
+    S.f = { folder: "", sub: "", num: "", from: "", to: "", sort: S.f.sort, needs: false };
+    $("#fNum").value = ""; $("#fFrom").value = ""; $("#fTo").value = ""; $("#fNeeds").checked = false; renderFilters(); renderBrowse();
+  });
+  // Browse clicks
+  $("#browse").addEventListener("click", e => {
+    const t = e.target;
+    const crumb = t.closest("[data-crumb]"); if (crumb) { S.path = S.path.slice(0, +crumb.dataset.crumb); renderBrowse(); return; }
+    const view = t.closest("[data-view]"); if (view) { S.view = view.dataset.view; LS.set("cb_view", S.view); renderBrowse(); return; }
+    const open = t.closest("[data-open]"); if (open) { S.path = S.path.concat(open.dataset.open); renderBrowse(); window.scrollTo(0, 0); return; }
+    const dl = t.closest("[data-dl]"); if (dl) { const c = byId(dl.dataset.dl); if (c) downloadCircular(c); return; }
+    const more = t.closest("[data-more]"); if (more) { const c = byId(more.dataset.more); if (c) showDetails(c); return; }
+    const card = t.closest(".circ"); if (card) { const c = byId(card.dataset.id); if (c) viewCircular(c); }
+  });
+  // Upload form
+  const drop = $("#drop");
+  $("#uFile").addEventListener("change", e => setFile(e.target.files[0]));
+  ["dragenter", "dragover"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add("over"); }));
+  ["dragleave", "drop"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove("over"); }));
+  drop.addEventListener("drop", e => { const f = e.dataTransfer.files[0]; if (f) setFile(f); });
+  $("#uFolder").addEventListener("input", renderUploadLists);
+  $("#uSub").addEventListener("input", renderUploadLists);
+  ["#uNum", "#uContent", "#uDate"].forEach(s => $(s).addEventListener("input", updateUploadPreview));
+  $("#uGo").addEventListener("click", doUpload);
+  // Refresh quietly when coming back to the page after a while.
+  document.addEventListener("visibilitychange", () => { if (!document.hidden && hasToken() && Date.now() - S.savedAt > 5 * 60 * 1000) refresh(); });
+  setInterval(renderStatus, 60000);
+}
+function changeRoot() {
+  modal(`<h3>Change circular folder</h3><p style="color:var(--muted);font-size:12px;margin:0 0 10px">Paste a Google Drive folder link. Folders inside it become your folders and subfolders.</p>
+    <label class="f">Folder link<input id="rLink" value="${esc("https://drive.google.com/drive/folders/" + S.rootId)}"></label>
+    <div class="err hidden" id="rErr"></div>
+    <div class="acts"><button class="btn ghost small" data-close>Cancel</button><button class="btn small" id="rSave">Open folder</button></div>`,
+    (sc, close) => sc.querySelector("#rSave").addEventListener("click", async () => {
+      const id = folderIdFromLink(sc.querySelector("#rLink").value); const err = sc.querySelector("#rErr");
+      if (!id) { err.textContent = "That doesn't look like a Google Drive folder link."; err.classList.remove("hidden"); return; }
+      try {
+        await ensureSignedIn(); const f = await resolveRoot(id);
+        S.rootId = f.id; S.rootName = f.name; LS.set("cb_root_id", f.id); LS.set("cb_root_name", f.name);
+        S.path = []; loadCache(); close(); renderAll(); refresh();
+      } catch (e) { err.textContent = e.message; err.classList.remove("hidden"); }
+    }));
+}
+function openSetup() {
+  $("#cidInput").value = S.clientId || ""; $("#originShow").textContent = location.origin && location.origin !== "null" ? location.origin : "(open this page from its web address to see it)";
+  $("#fileWarn").classList.toggle("hidden", location.protocol !== "file:");
+  showScreen("setup");
+}
+async function afterSignIn() {
+  showScreen("app"); renderAll();
+  // Remember who signed in (shown in the menu). Optional, so failures are ignored.
+  fetch("https://www.googleapis.com/drive/v3/about?fields=user(emailAddress)", { headers: { Authorization: "Bearer " + S.token } })
+    .then(r => r.ok ? r.json() : null).then(j => { if (j && j.user) { S.email = j.user.emailAddress; LS.set("cb_email", S.email); renderStatus(); } }).catch(() => {});
+  refresh();
+}
+function start() {
+  if (!S.clientId) { openSetup(); return; }
+  loadCache();
+  if (!S.circulars.length && !hasToken()) { showScreen("signin"); return; }
+  showScreen("app"); renderAll();
+  if (hasToken()) refresh();
+}
+$("#uDate").value = todayIso();
+bind(); start();
+</script>
+</body>
+</html>
