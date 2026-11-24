@@ -149,6 +149,20 @@ main.wide{max-width:1240px}
   .pv.small .pvbody{display:none}
 }
 
+.dups{border:1px solid #BFDBFE;background:#F8FBFF;border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:6px}
+.dups.strong{border-color:#FCD34D;background:#FFFBEB}
+.dhead{font-size:12px;font-weight:700;color:#1E3A8A}
+.dups.strong .dhead{color:var(--amber)}
+.dhead span{font-weight:500;color:var(--muted)}
+.drow{display:block;width:100%;text-align:left;background:#fff;border:1px solid var(--border);border-radius:10px;padding:8px 10px}
+.drow:hover{border-color:#93C5FD}
+.drow .dt{font-weight:600;font-size:12px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.drow .dm{font-size:11px;color:var(--muted);display:flex;flex-wrap:wrap;gap:2px 10px;margin-top:2px}
+.drow .dw{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.drow .dw span{font-size:10px;font-weight:600;border-radius:6px;padding:1px 6px;background:var(--blue-soft);color:#1E40AF}
+.drow .dw span.hot{background:#FEE2E2;color:#B91C1C}
+.dmore{font-size:11px;color:var(--muted)}
+
 /* Bottom nav */
 nav.bottom{position:fixed;left:0;right:0;bottom:0;z-index:20;background:rgba(255,255,255,.96);backdrop-filter:blur(8px);border-top:1px solid var(--border);padding-bottom:env(safe-area-inset-bottom)}
 nav.bottom .wrap{display:flex;gap:8px;padding-top:6px;padding-bottom:6px}
@@ -298,6 +312,7 @@ code{background:#F1F5F9;border-radius:6px;padding:1px 5px;font-size:12px;word-br
             <textarea id="uContent" rows="3" placeholder="Subject or short summary, used for search"></textarea>
           </label>
           <div class="preview full"><b>Will be saved as</b><span id="uName">Choose a file and fill in the details</span></div>
+          <div class="dups full hidden" id="uDups"></div>
         </div>
         <datalist id="dlFolders"></datalist>
         <datalist id="dlSubs"></datalist>
@@ -792,10 +807,46 @@ function updateUploadPreview() {
   const num = $("#uNum").value.trim(), content = $("#uContent").value.trim(), date = $("#uDate").value;
   $("#uName").textContent = S.file && (num || content)
     ? buildFileName(date, num, content, S.file.name, S.file.type) : "Choose a file and fill in the details";
-  const dup = num ? S.circulars.filter(c => c.circularNumber && normNum(c.circularNumber) === normNum(num)) : [];
-  const w = $("#uNumWarn");
-  w.classList.toggle("hidden", !dup.length);
-  if (dup.length) w.textContent = `Number already used: "${dup[0].content}" (${fmtDate(dup[0].circularDate) || "no date"}, ${dup[0].folder}).`;
+  const dups = findDuplicates(date, num, content);
+  const w = $("#uNumWarn"); const exact = dups.filter(d => d.why.includes("Same number"));
+  w.classList.toggle("hidden", !exact.length);
+  if (exact.length) w.textContent = exact.length === 1 ? "This number is already uploaded. See below." : `This number is already uploaded ${exact.length} times. See below.`;
+  renderDuplicates(dups);
+}
+// Circulars already in the list that look like the one being entered, best match first.
+const STOP = new Set("the of and to in for on a an by with from regarding reg sub subject circular no dated dt".split(" "));
+const words = s => lc(s).split(/[^a-z0-9\u0900-\u0aff]+/).filter(w => w.length > 2 && !STOP.has(w));
+function findDuplicates(date, num, content) {
+  const n = normNum(num), cw = [...new Set(words(content))];
+  if (!n && !date && cw.length < 2) return [];
+  const out = [];
+  for (const c of S.circulars) {
+    const why = []; let score = 0; const cn = normNum(c.circularNumber);
+    if (n && cn) {
+      if (cn === n) { why.push("Same number"); score += 100; }
+      else if (n.length >= 2 && cn.length >= 2 && (cn.includes(n) || n.includes(cn))) { why.push("Similar number"); score += 40; }
+    }
+    if (date && c.circularDate === date) { why.push("Same date"); score += 30; }
+    if (cw.length >= 2) {
+      const have = new Set(words(c.content + " " + c.fileName)); const hit = cw.filter(w => have.has(w)).length;
+      if (hit >= 2 && hit / cw.length >= 0.6) { why.push("Similar content"); score += 20 + Math.round(20 * hit / cw.length); }
+    }
+    if (why.length) out.push({ c, why, score });
+  }
+  return out.sort((a, b) => b.score - a.score || (b.c.circularDate || "").localeCompare(a.c.circularDate || ""));
+}
+function renderDuplicates(dups) {
+  const el = $("#uDups"); if (!el) return;
+  if (!dups.length) { el.innerHTML = ""; el.classList.add("hidden"); return; }
+  const strong = dups.some(d => d.why.includes("Same number") || (d.why.includes("Same date") && d.why.length > 1));
+  const max = 6;
+  el.classList.remove("hidden"); el.classList.toggle("strong", strong);
+  el.innerHTML = `<div class="dhead">${strong ? "Possible duplicate. Check before uploading" : "Already uploaded circulars that match"} <span>(${dups.length})</span></div>` +
+    dups.slice(0, max).map(({ c, why }) => `<button class="drow" data-dupview="${esc(c.driveItemId)}" title="Open ${esc(c.fileName)}">
+      <div class="dt">${esc(c.content || c.fileName)}</div>
+      <div class="dm"><span>${esc(fmtDate(c.circularDate) || "No date")}</span><span>No. ${esc(c.circularNumber || "-")}</span><span>${esc([c.folder, c.subfolder].filter(Boolean).join(" › "))}</span></div>
+      <div class="dw">${why.map(w => `<span class="${w === "Same number" ? "hot" : ""}">${w}</span>`).join("")}</div></button>`).join("") +
+    (dups.length > max ? `<div class="dmore">and ${dups.length - max} more. Type more of the number or content to narrow it down.</div>` : "");
 }
 function renderAll() { renderStatus(); renderNotice(); renderFilters(); renderBrowse(); renderUploadLists(); }
 function showScreen(which) {
@@ -1006,6 +1057,12 @@ async function doUpload() {
     !date ? "Pick the date of the circular." : !num ? "Type the circular number." : !content ? "Type the content of the circular." : "";
   if (problem) { err.textContent = problem; err.classList.remove("hidden"); return; }
   if (S.uploading) return;
+  const same = findDuplicates("", num, "").filter(d => d.why.includes("Same number"));
+  if (same.length && S.dupOkFor !== normNum(num)) {
+    S.dupOkFor = normNum(num); $("#uGo").textContent = "Upload anyway";
+    err.textContent = `Circular number ${num} is already uploaded ("${same[0].c.content}", ${fmtDate(same[0].c.circularDate) || "no date"}). Check the list below. If this is a different circular, tap "Upload anyway".`;
+    err.classList.remove("hidden"); return;
+  }
   const signing = ensureSignedIn(); // straight from the tap, so the Google window isn't blocked
   S.uploading = true; const btn = $("#uGo"); btn.disabled = true; btn.textContent = "Uploading…";
   $("#uProg").classList.remove("hidden"); $("#uBar").style.width = "0%"; $("#uProgTxt").textContent = "Preparing…";
@@ -1110,7 +1167,9 @@ function bind() {
   $("#uFolder").addEventListener("input", renderUploadLists);
   $("#uSub").addEventListener("input", renderUploadLists);
   ["#uNum", "#uContent", "#uDate"].forEach(s => $(s).addEventListener("input", updateUploadPreview));
+  $("#uNum").addEventListener("input", () => { if (S.dupOkFor) { S.dupOkFor = null; $("#uGo").textContent = "Upload"; $("#uErr").classList.add("hidden"); } });
   $("#uGo").addEventListener("click", doUpload);
+  $("#uDups").addEventListener("click", e => { const b = e.target.closest("[data-dupview]"); if (b) { const c = byId(b.dataset.dupview); if (c) viewCircular(c); } });
   // Refresh quietly when coming back to the page after a while.
   document.addEventListener("visibilitychange", () => { if (!document.hidden && hasToken() && Date.now() - S.savedAt > 5 * 60 * 1000) refresh(); });
   setInterval(renderStatus, 60000);
