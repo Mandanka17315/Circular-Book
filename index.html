@@ -149,6 +149,16 @@ main.wide{max-width:1240px}
   .pv.small .pvbody{display:none}
 }
 
+.fchain{display:flex;flex-direction:column;gap:6px;font-size:11px;font-weight:600;color:var(--muted)}
+.fchain .hint{font-weight:500;color:var(--muted)}
+.fchain .hint b{color:var(--ink)}
+#uPath{display:flex;flex-direction:column;gap:6px}
+.fchain select{border:1px solid var(--border);border-radius:10px;padding:8px 10px;background:#fff;font-size:13px;font-weight:400;color:var(--ink);min-width:0}
+.fchain select:focus{outline:0;border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+.lvl .arrow{color:var(--muted);font-size:14px;align-self:center;width:14px;flex:none}
+.pick{display:flex;gap:6px;align-items:stretch}
+.pick select{flex:1;min-width:0}
+.pick .btn{white-space:nowrap;height:auto;color:var(--blue);font-weight:700}
 .dups{border:1px solid #BFDBFE;background:#F8FBFF;border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:6px}
 .dups.strong{border-color:#FCD34D;background:#FFFBEB}
 .dhead{font-size:12px;font-weight:700;color:#1E3A8A}
@@ -162,6 +172,20 @@ main.wide{max-width:1240px}
 .drow .dw span{font-size:10px;font-weight:600;border-radius:6px;padding:1px 6px;background:var(--blue-soft);color:#1E40AF}
 .drow .dw span.hot{background:#FEE2E2;color:#B91C1C}
 .dmore{font-size:11px;color:var(--muted)}
+
+.scrim.full{padding:10px}
+.scrim.full .sheet{max-width:1000px;height:94vh;max-height:none;padding:0;display:flex;flex-direction:column;overflow:hidden}
+.vhead{display:flex;align-items:center;gap:6px;padding:8px 10px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.vhead .vbtns{display:flex;gap:6px;flex-wrap:wrap;order:3}
+.vhead .x{order:2}
+.vhead .t{order:1;flex:1;min-width:0;font-weight:700;font-size:13px;line-height:1.25}
+.vhead .t small{display:block;font-weight:500;color:var(--muted);font-size:11px}
+.vhead button{border:1px solid var(--border);background:#fff;border-radius:8px;height:30px;min-width:30px;padding:0 9px;font-size:12px;font-weight:600}
+.vhead button.x{border:0;font-size:18px;color:var(--muted)}
+.scrim.full .pvbody{flex:1}
+@media(max-width:700px){.vhead .vbtns{width:100%}}
+.btn.danger{background:#fff;color:var(--red);border:1px solid #FECACA}
+.btn.danger.solid{background:var(--red);color:#fff;border:0}
 
 /* Bottom nav */
 nav.bottom{position:fixed;left:0;right:0;bottom:0;z-index:20;background:rgba(255,255,255,.96);backdrop-filter:blur(8px);border-top:1px solid var(--border);padding-bottom:env(safe-area-inset-bottom)}
@@ -295,14 +319,10 @@ code{background:#F1F5F9;border-radius:6px;padding:1px 5px;font-size:12px;word-br
           <div class="small" id="dropSmall">or drag it here. PDF, Word, Excel, images, any size.</div>
         </label>
         <div class="formgrid">
-          <label class="f">Folder
-            <input id="uFolder" list="dlFolders" placeholder="Pick or type a new folder" autocomplete="off">
-            <span class="hint" id="uFolderHint">A new folder is created if it doesn't exist.</span>
-          </label>
-          <label class="f">Subfolder (optional)
-            <input id="uSub" list="dlSubs" placeholder="Pick, type a new one, or leave empty" autocomplete="off">
-            <span class="hint" id="uSubHint"></span>
-          </label>
+          <div class="f fchain full">Folder and subfolders
+            <div id="uPath"></div>
+            <span class="hint" id="uFolderHint"></span>
+          </div>
           <label class="f">Date of circular<input id="uDate" type="date"></label>
           <label class="f">Circular number
             <input id="uNum" placeholder="e.g. FIN/12/2026" autocomplete="off">
@@ -314,8 +334,6 @@ code{background:#F1F5F9;border-radius:6px;padding:1px 5px;font-size:12px;word-br
           <div class="preview full"><b>Will be saved as</b><span id="uName">Choose a file and fill in the details</span></div>
           <div class="dups full hidden" id="uDups"></div>
         </div>
-        <datalist id="dlFolders"></datalist>
-        <datalist id="dlSubs"></datalist>
         <div id="uErr" class="err hidden"></div>
         <div id="uProg" class="hidden"><div class="bar"><div id="uBar"></div></div><div style="font-size:11px;color:var(--muted);margin-top:4px" id="uProgTxt"></div></div>
         <button class="btn" id="uGo" style="width:100%;margin-top:14px">Upload</button>
@@ -463,7 +481,7 @@ const S = {
   loading: false, error: "",
   page: "browse", path: [], view: LS.get("cb_view", "tile"),
   q: "", f: { folder: "", sub: "", num: "", from: "", to: "", sort: "new", needs: false },
-  file: null, uploading: false,
+  file: null, uploading: false, upPath: [],
 };
 (function loadToken() { const t = LS.get("cb_token", null); if (t && t.exp > Date.now()) { S.token = t.token; S.tokenExp = t.exp; } })();
 const cacheKey = () => "cb_cache_" + S.rootId;
@@ -786,22 +804,57 @@ function renderFilters() {
   $("#fSub").innerHTML = `<option value="">Any subfolder</option>` + subs.map(f => `<option ${f === S.f.sub ? "selected" : ""}>${esc(f)}</option>`).join("");
   const n = filterCount(); $("#fcount").textContent = n; $("#fcount").classList.toggle("hidden", !n); $("#fbtn").classList.toggle("on", n > 0);
 }
-function renderUploadLists() {
-  const top = new Map();
-  for (const f of Object.values(S.folders)) if (f.parent === S.rootId) top.set(lc(f.name), f.name);
-  for (const c of S.circulars) if (c.folder && c.folder !== ROOT_LABEL && !top.has(lc(c.folder))) top.set(lc(c.folder), c.folder);
-  $("#dlFolders").innerHTML = [...top.values()].sort((a, b) => lc(a).localeCompare(lc(b))).map(n => `<option value="${esc(n)}">`).join("");
-  const folder = $("#uFolder").value.trim(); const subs = new Map();
-  if (folder) {
-    const fid = folderIdAt([folder]);
-    if (fid) for (const f of Object.values(S.folders)) if (f.parent === fid) subs.set(lc(f.name), f.name);
-    for (const c of S.circulars) if (lc(c.folder) === lc(folder) && c.subfolder && !subs.has(lc(c.subfolder))) subs.set(lc(c.subfolder), c.subfolder);
+// Folder picker for uploads: one dropdown per level (folder › subfolder › sub-subfolder …).
+function childNamesAt(path) { return childFolders(path).map(k => k.name).filter(n => path.length || n !== ROOT_LABEL); }
+function chainHtml(path) {
+  let h = "";
+  for (let i = 0; i <= path.length; i++) {
+    const parent = path.slice(0, i), names = childNamesAt(parent), cur = path[i] || "";
+    const pad = `style="padding-left:${Math.min(i, 5) * 14}px"`, arrow = i ? `<span class="arrow">↳</span>` : "";
+    if (i > 0 && i === path.length && !names.length) {
+      h += `<div class="pick lvl" ${pad}>${arrow}<button type="button" class="btn ghost small" data-newlvl="${i}">+ New subfolder in ${esc(path[i - 1])}</button></div>`;
+      break;
+    }
+    h += `<div class="pick lvl" ${pad}>${arrow}<select data-lvl="${i}" aria-label="${i ? "Subfolder level " + i : "Folder"}">
+      <option value="">${i ? "No subfolder (save in " + esc(path[i - 1]) + ")" : "Choose a folder…"}</option>
+      ${names.map(n => `<option value="${esc(n)}" ${lc(n) === lc(cur) ? "selected" : ""}>${esc(n)}</option>`).join("")}</select>
+      <button type="button" class="btn ghost small" data-newlvl="${i}">+ New ${i ? "subfolder" : "folder"}</button></div>`;
   }
-  $("#dlSubs").innerHTML = [...subs.values()].sort((a, b) => lc(a).localeCompare(lc(b))).map(n => `<option value="${esc(n)}">`).join("");
-  $("#uFolderHint").textContent = folder && !top.has(lc(folder)) ? `New folder "${folder}" will be created.` : "Pick an existing folder or type a new name.";
-  const sub = $("#uSub").value.trim();
-  $("#uSubHint").textContent = sub && !subs.has(lc(sub)) ? `New subfolder "${sub}" will be created.` : "";
+  return h;
+}
+function renderUploadLists() {
+  const path = S.upPath;
+  $("#uPath").innerHTML = chainHtml(path);
+  $("#uFolderHint").innerHTML = path.length ? `Will be saved in: <b>${path.map(esc).join(" › ")}</b>`
+    : childNamesAt([]).length ? "" : "No folders yet. Tap + New folder.";
   updateUploadPreview();
+}
+// "+ New folder" / "+ New subfolder": asks for a name and creates it in Google Drive right away.
+function newFolderDialog(parent, onCreated) {
+  const level = parent.length;
+  modal(`<h3>${level ? `New subfolder in "${esc(parent.join(" › "))}"` : "New folder"}</h3>
+    <label class="f">Name<input id="nfName" placeholder="${level ? "e.g. Payroll" : "e.g. Finance"}" autocomplete="off"></label>
+    <div class="err hidden" id="nfErr"></div>
+    <div class="acts"><button class="btn ghost small" data-close>Cancel</button><button class="btn small" id="nfGo">Create</button></div>`,
+    (sc, close) => {
+      const inp = sc.querySelector("#nfName"), err = sc.querySelector("#nfErr"), go = sc.querySelector("#nfGo");
+      setTimeout(() => inp.focus(), 50);
+      const create = async () => {
+        const name = cleanName(inp.value).trim();
+        const bad = !name ? "Type a name." : /[\/]/.test(inp.value) ? "A name can't contain /." : "";
+        if (bad) { err.textContent = bad; err.classList.remove("hidden"); return; }
+        const signing = ensureSignedIn(); // straight from the tap
+        go.disabled = true; go.textContent = "Creating…"; err.classList.add("hidden");
+        try {
+          await signing; renderStatus();
+          const id = await ensureFolderPath(parent.concat(name));
+          saveCache(); const real = pathOf(id); close(); onCreated(real); renderBrowse();
+          toast(`"${real[real.length - 1]}" is ready in Google Drive`);
+        } catch (e) { err.textContent = e.message; err.classList.remove("hidden"); go.disabled = false; go.textContent = "Create"; if (e instanceof AuthError) renderStatus(); }
+      };
+      go.addEventListener("click", create);
+      inp.addEventListener("keydown", e => { if (e.key === "Enter") create(); });
+    });
 }
 function updateUploadPreview() {
   const num = $("#uNum").value.trim(), content = $("#uContent").value.trim(), date = $("#uDate").value;
@@ -861,10 +914,10 @@ function setPage(p) {
 }
 
 /* ---------- modal ---------- */
-function modal(html, onMount) {
-  const sc = document.createElement("div"); sc.className = "scrim";
+function modal(html, onMount, opts = {}) {
+  const sc = document.createElement("div"); sc.className = "scrim" + (opts.full ? " full" : "");
   sc.innerHTML = `<div class="sheet" role="dialog">${html}</div>`;
-  const close = () => sc.remove();
+  const close = () => { if (!sc.isConnected) return; sc.remove(); opts.onClose && opts.onClose(); };
   sc.addEventListener("click", e => { if (e.target === sc || e.target.closest("[data-close]")) close(); });
   document.body.appendChild(sc); onMount && onMount(sc, close);
   return close;
@@ -877,10 +930,12 @@ function showDetails(c) {
     <dt>Folder</dt><dd>${esc(c.folder)}</dd><dt>Subfolder</dt><dd>${esc(c.subfolder || "None")}</dd>
     <dt>File name</dt><dd>${esc(c.fileName)}</dd>${c.sizeBytes ? `<dt>Size</dt><dd>${(c.sizeBytes / 1048576).toFixed(c.sizeBytes > 1048576 ? 1 : 2)} MB</dd>` : ""}</dl>
     ${c.needsDetails ? `<div class="info" style="margin:0 0 8px"><span>This file was already in Drive. The date and number were guessed from its name. Use <b>Edit details</b> to correct them.</span></div>` : ""}
-    <div class="acts"><button class="btn ghost small" data-act="edit">Edit details</button><button class="btn ghost small" data-act="dl">Download</button><button class="btn small" data-act="view">View</button></div>`,
+    <div class="acts"><button class="btn danger small" data-act="del" style="margin-right:auto">Delete</button><button class="btn ghost small" data-act="move">Move to</button><button class="btn ghost small" data-act="edit">Edit details</button><button class="btn ghost small" data-act="dl">Download</button><button class="btn small" data-act="view">Preview</button></div>`,
     (sc, close) => sc.addEventListener("click", e => {
       const a = e.target.closest("[data-act]"); if (!a) return;
-      if (a.dataset.act === "view") { viewCircular(c); close(); }
+      if (a.dataset.act === "view") { close(); viewCircular(c); }
+      if (a.dataset.act === "del") { close(); deleteCircular(c); }
+      if (a.dataset.act === "move") { close(); moveCircular(c); }
       if (a.dataset.act === "dl") { downloadCircular(c); close(); }
       if (a.dataset.act === "edit") { close(); editDetails(c); }
     }));
@@ -917,8 +972,99 @@ function editDetails(c) {
 function fitProp(key, v) { v = String(v || ""); const enc = new TextEncoder(); while (enc.encode(key + v).length > 124) v = v.slice(0, -1); return v; }
 
 /* ---------- view / download ---------- */
+// In-page preview of an uploaded circular (PDF pages and images drawn right here).
 function viewCircular(c) {
-  // Google Drive's own viewer: opens instantly, works for PDF, Word, images, etc.
+  const signing = ensureSignedIn(); // straight from the tap
+  let V = null;
+  modal(`<div class="vhead"><div class="t">${esc(c.content || c.fileName)}<small>${esc([fmtDate(c.circularDate), c.circularNumber && "No. " + c.circularNumber, [c.folder, ...String(c.subfolder || "").split(" / ").filter(Boolean)].join(" › ")].filter(Boolean).join(" · "))}</small></div><button class="x" data-close title="Close">×</button>
+      <div class="vbtns"><button data-v="out" title="Smaller">−</button><button data-v="in" title="Bigger">+</button><button data-v="fit">Fit</button>
+      <button data-v="dl">Download</button><button data-v="drive">Open in Drive</button><button data-v="more">Details</button></div></div>
+    <div class="pvbody" id="vBody"><div class="msg">Loading preview…</div></div>`,
+    async (sc, close) => {
+      const body = sc.querySelector("#vBody"); V = makeViewer(body);
+      sc.querySelector(".vhead").addEventListener("click", e => {
+        const b = e.target.closest("[data-v]"); if (!b) return; const v = b.dataset.v;
+        if (v === "in") V.zoomBy(1.25); if (v === "out") V.zoomBy(1 / 1.25); if (v === "fit") V.fit();
+        if (v === "dl") downloadCircular(c); if (v === "drive") openInDrive(c);
+        if (v === "more") { close(); showDetails(c); }
+      });
+      try {
+        await signing; renderStatus();
+        const m = await (await api(filesUrl(c.driveItemId, { fields: "mimeType,name,size" }))).json();
+        const isG = (m.mimeType || "").startsWith(GAPPS);
+        const type = isG ? "application/pdf" : (m.mimeType || c.mimeType);
+        if (!isG && !previewable(m.name, type)) { V.message(c.fileName, type, true); bindOpen(body, c); return; }
+        if (Number(m.size || 0) > 60 * 1048576) { body.innerHTML = `<div class="msg">This file is large (${(m.size / 1048576).toFixed(0)} MB). <br><button class="btn small" data-open-drive>Open in Google Drive</button></div>`; bindOpen(body, c); return; }
+        const url = isG ? `${API}/files/${encodeURIComponent(c.driveItemId)}/export?mimeType=application%2Fpdf` : filesUrl(c.driveItemId, { alt: "media" });
+        const blob = await (await api(url)).blob();
+        if (!sc.isConnected) return;
+        await V.show(blob, isG ? m.name + ".pdf" : m.name, type);
+      } catch (e) {
+        body.innerHTML = `<div class="msg">${esc(e.message)}<br><br><button class="btn small" data-open-drive>Open in Google Drive</button></div>`; bindOpen(body, c);
+        if (e instanceof AuthError) renderAll();
+      }
+    }, { full: true, onClose: () => V && V.clear() });
+}
+function bindOpen(body, c) { body.addEventListener("click", e => { if (e.target.closest("[data-open-drive]")) openInDrive(c); }); }
+function deleteCircular(c) {
+  modal(`<h3>Delete this circular?</h3>
+    <p style="margin:0 0 6px;font-weight:600">${esc(c.content || c.fileName)}</p>
+    <p style="color:var(--muted);font-size:12px;margin:0">${esc(fmtDate(c.circularDate) || "No date")}${c.circularNumber ? " · No. " + esc(c.circularNumber) : ""} · ${esc(c.fileName)}</p>
+    <p style="color:var(--muted);font-size:12px">The file moves to the Bin in Google Drive. You can restore it from there for 30 days.</p>
+    <div class="err hidden" id="dErr"></div>
+    <div class="acts"><button class="btn ghost small" data-close>Cancel</button><button class="btn danger solid small" id="dGo">Delete</button></div>`,
+    (sc, close) => sc.querySelector("#dGo").addEventListener("click", async () => {
+      const signing = ensureSignedIn(); const go = sc.querySelector("#dGo"), err = sc.querySelector("#dErr");
+      go.disabled = true; go.textContent = "Deleting…"; err.classList.add("hidden");
+      try {
+        await signing;
+        await api(filesUrl(c.driveItemId, { fields: "id" }), { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ trashed: true }) });
+        S.circulars = S.circulars.filter(x => x.driveItemId !== c.driveItemId); saveCache(); renderAll(); close();
+        toast("Deleted. It's in the Google Drive Bin if you need it back.", 4500);
+        try { await updateIndex(list => list.filter(x => x.driveItemId !== c.driveItemId)); } catch (e) { /* the next refresh drops it anyway */ }
+      } catch (e) { err.textContent = e.message; err.classList.remove("hidden"); go.disabled = false; go.textContent = "Delete"; if (e instanceof AuthError) renderStatus(); }
+    }));
+}
+// Move a circular to any folder (any depth), like moving it in Google Drive.
+function moveCircular(c) {
+  const from = locOf(c).filter(n => n !== ROOT_LABEL);
+  let path = from.slice();
+  modal(`<h3>Move to…</h3>
+    <p style="margin:0 0 4px;font-weight:600">${esc(c.content || c.fileName)}</p>
+    <p style="color:var(--muted);font-size:12px;margin:0 0 10px">Now in: ${esc(from.join(" › ") || "Main folder")}</p>
+    <div class="f fchain">Move to folder<div id="mPath" style="display:flex;flex-direction:column;gap:6px"></div><span class="hint" id="mHint"></span></div>
+    <div class="err hidden" id="mErr"></div>
+    <div class="acts"><button class="btn ghost small" data-close>Cancel</button><button class="btn small" id="mGo">Move here</button></div>`,
+    (sc, close) => {
+      const box = sc.querySelector("#mPath"), hint = sc.querySelector("#mHint"), go = sc.querySelector("#mGo"), err = sc.querySelector("#mErr");
+      const draw = () => {
+        box.innerHTML = chainHtml(path);
+        const same = path.length === from.length && path.every((p, i) => lc(p) === lc(from[i]));
+        hint.innerHTML = path.length ? `Will move to: <b>${path.map(esc).join(" › ")}</b>` : "Choose a folder.";
+        go.disabled = !path.length || same; if (same && path.length) hint.innerHTML += " (it's already here)";
+      };
+      draw();
+      box.addEventListener("change", e => { const sel = e.target.closest("[data-lvl]"); if (!sel) return; const l = +sel.dataset.lvl; path = path.slice(0, l).concat(sel.value ? [sel.value] : []); draw(); });
+      box.addEventListener("click", e => { const b = e.target.closest("[data-newlvl]"); if (b) newFolderDialog(path.slice(0, +b.dataset.newlvl), real => { path = real; draw(); }); });
+      go.addEventListener("click", async () => {
+        const signing = ensureSignedIn(); go.disabled = true; go.textContent = "Moving…"; err.classList.add("hidden");
+        try {
+          await signing;
+          const target = await ensureFolderPath(path);
+          const meta = await (await api(filesUrl(c.driveItemId, { fields: "parents" }))).json();
+          const u = filesUrl(c.driveItemId, { fields: FIELDS, addParents: target, removeParents: (meta.parents || []).join(",") });
+          const f = await (await api(u, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: "{}" })).json();
+          const real = pathOf(target);
+          const upd = { ...c, folder: real[0] || ROOT_LABEL, subfolder: real.slice(1).join(" / "), webUrl: f.webViewLink || c.webUrl };
+          S.circulars = S.circulars.map(x => x.driveItemId === c.driveItemId ? upd : x); saveCache(); renderAll(); close();
+          toast("Moved to " + real.join(" › "));
+          try { await updateIndex(list => list.filter(x => x.driveItemId !== c.driveItemId).concat(upd)); } catch (e) { /* Drive already has the new place; the next refresh corrects the list */ }
+        } catch (e) { err.textContent = e.message; err.classList.remove("hidden"); go.disabled = false; go.textContent = "Move here"; if (e instanceof AuthError) renderStatus(); }
+      });
+    });
+}
+function openInDrive(c) {
+  // Google Drive's own viewer: works for Word, Excel and everything else.
   window.open(c.webUrl || `https://drive.google.com/file/d/${encodeURIComponent(c.driveItemId)}/view`, "_blank", "noopener");
 }
 async function downloadCircular(c) {
@@ -983,64 +1129,83 @@ function loadPdfJs() {
   });
   return pdfjsLoading;
 }
-const PV = { url: null, kind: null, pdf: null, zoom: 1, token: 0, maxPages: 30 };
-function clearPreview() {
-  PV.token++; if (PV.pdf) { try { PV.pdf.destroy(); } catch (e) {} } PV.pdf = null;
-  if (PV.url) URL.revokeObjectURL(PV.url); PV.url = null; PV.kind = null; PV.zoom = 1;
-  $("#pvBody").innerHTML = ""; $("#pv").classList.add("hidden"); $("#upgrid").classList.remove("has-prev"); $("main").classList.remove("wide");
+const previewable = (name, type) => { type = lc(type); name = lc(name);
+  return type === "application/pdf" || name.endsWith(".pdf") || (type.startsWith("image/") && !/heic|heif|tiff/.test(type)); };
+// Draws a PDF (all pages, up to 30) or an image into a scrolling box, with zoom.
+function makeViewer(body) {
+  const V = { url: null, kind: null, pdf: null, zoom: 1, token: 0, maxPages: 30 };
+  V.clear = () => {
+    V.token++; if (V.pdf) { try { V.pdf.destroy(); } catch (e) {} } V.pdf = null;
+    if (V.url) URL.revokeObjectURL(V.url); V.url = null; V.kind = null; V.zoom = 1; body.innerHTML = "";
+  };
+  V.message = (name, type, inModal) => {
+    V.kind = "none";
+    body.innerHTML = `<div class="msg">No preview for this type of file (${esc(extOf(name) || type || "unknown").toUpperCase()}).<br>` +
+      (inModal ? `<br><button class="btn small" data-open-drive>Open in Google Drive</button>` : "Open it in another app to read the details, or just fill them in.") + `</div>`;
+  };
+  V.show = async (blob, name, type) => {
+    V.clear(); name = lc(name); type = lc(type || blob.type);
+    const isPdf = type === "application/pdf" || name.endsWith(".pdf");
+    V.url = URL.createObjectURL(blob);
+    if (!isPdf && previewable(name, type)) {
+      V.kind = "img"; body.innerHTML = `<img alt="">`; const img = body.querySelector("img"); img.onload = V.apply; img.src = V.url; return;
+    }
+    if (!isPdf) { V.message(name, type, false); return; }
+    V.kind = "pdf"; body.innerHTML = `<div class="msg">Opening PDF…</div>`;
+    const my = V.token;
+    try {
+      const lib = await loadPdfJs();
+      const pdf = await lib.getDocument({ data: new Uint8Array(await blob.arrayBuffer()) }).promise;
+      if (my !== V.token) { pdf.destroy(); return; }
+      V.pdf = pdf; await V.render();
+    } catch (e) {
+      if (my !== V.token) return;
+      // Fallback: the browser's own PDF viewer (works on computers; phones may only offer "Open").
+      V.kind = "frame"; body.innerHTML = `<iframe src="${V.url}" title="Preview"></iframe>`;
+    }
+  };
+  V.render = async () => {
+    const pdf = V.pdf; if (!pdf) return; const my = ++V.token;
+    const width = Math.max(200, body.clientWidth - 16) * V.zoom; const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const frag = document.createDocumentFragment(); const canvases = [];
+    const n = Math.min(pdf.numPages, V.maxPages);
+    for (let i = 1; i <= n; i++) { const c = document.createElement("canvas"); frag.appendChild(c); canvases.push(c); }
+    body.innerHTML = ""; body.appendChild(frag);
+    if (pdf.numPages > n) body.insertAdjacentHTML("beforeend", `<div class="msg">Showing the first ${n} of ${pdf.numPages} pages.</div>`);
+    for (let i = 1; i <= n; i++) {
+      if (my !== V.token) return;
+      const page = await pdf.getPage(i);
+      const vp1 = page.getViewport({ scale: 1 }); const vp = page.getViewport({ scale: (width / vp1.width) * dpr });
+      const c = canvases[i - 1]; c.width = Math.floor(vp.width); c.height = Math.floor(vp.height);
+      c.style.width = Math.floor(vp.width / dpr) + "px"; c.style.height = Math.floor(vp.height / dpr) + "px";
+      await page.render({ canvasContext: c.getContext("2d"), viewport: vp }).promise;
+    }
+  };
+  V.apply = () => {
+    if (V.kind === "pdf") V.render();
+    if (V.kind === "img") { const img = body.querySelector("img"); if (img) img.style.width = Math.max(100, (body.clientWidth - 16) * V.zoom) + "px"; }
+  };
+  V.zoomBy = f => { V.zoom = Math.max(0.4, Math.min(4, V.zoom * f)); V.apply(); };
+  V.fit = () => { V.zoom = 1; V.apply(); };
+  return V;
 }
-async function showPreview(f) {
+const PV = makeViewer($("#pvBody"));
+function clearPreview() {
+  PV.clear(); $("#pv").classList.add("hidden"); $("#upgrid").classList.remove("has-prev"); $("main").classList.remove("wide");
+}
+function showPreview(f) {
   clearPreview(); if (!f) return;
-  const name = lc(f.name), type = lc(f.type);
-  const isPdf = type === "application/pdf" || name.endsWith(".pdf");
-  const isImg = type.startsWith("image/") && !/heic|heif|tiff/.test(type);
   $("#pv").classList.remove("hidden", "small"); $("#pvHide").textContent = "Hide";
   $("#upgrid").classList.add("has-prev"); $("main").classList.add("wide");
   $("#pvTitle").textContent = f.name;
-  const body = $("#pvBody");
-  PV.url = URL.createObjectURL(f);
-  if (isImg) { PV.kind = "img"; body.innerHTML = `<img id="pvImg" alt="">`; $("#pvImg").src = PV.url; $("#pvImg").onload = applyZoom; return; }
-  if (!isPdf) { PV.kind = "none"; body.innerHTML = `<div class="msg">No preview for this type of file (${esc(extOf(f.name) || "unknown").toUpperCase()}).<br>Open it in another app to read the details, or just fill them in.</div>`; return; }
-  PV.kind = "pdf"; body.innerHTML = `<div class="msg">Opening PDF…</div>`;
-  const my = PV.token;
-  try {
-    const lib = await loadPdfJs();
-    const pdf = await lib.getDocument({ data: new Uint8Array(await f.arrayBuffer()) }).promise;
-    if (my !== PV.token) { pdf.destroy(); return; }
-    PV.pdf = pdf; await renderPdf();
-  } catch (e) {
-    if (my !== PV.token) return;
-    // Fallback: the browser's own PDF viewer (works on computers; phones may only offer "Open").
-    PV.kind = "frame"; body.innerHTML = `<iframe src="${PV.url}" title="Preview"></iframe>`;
-  }
-}
-async function renderPdf() {
-  const pdf = PV.pdf; if (!pdf) return; const my = ++PV.token; const body = $("#pvBody");
-  const width = Math.max(200, body.clientWidth - 16) * PV.zoom; const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  const frag = document.createDocumentFragment(); const canvases = [];
-  const n = Math.min(pdf.numPages, PV.maxPages);
-  for (let i = 1; i <= n; i++) { const c = document.createElement("canvas"); frag.appendChild(c); canvases.push(c); }
-  body.innerHTML = ""; body.appendChild(frag);
-  if (pdf.numPages > n) body.insertAdjacentHTML("beforeend", `<div class="msg">Showing the first ${n} of ${pdf.numPages} pages.</div>`);
-  for (let i = 1; i <= n; i++) {
-    if (my !== PV.token) return;
-    const page = await pdf.getPage(i);
-    const vp1 = page.getViewport({ scale: 1 }); const scale = width / vp1.width; const vp = page.getViewport({ scale: scale * dpr });
-    const c = canvases[i - 1]; c.width = Math.floor(vp.width); c.height = Math.floor(vp.height);
-    c.style.width = Math.floor(vp.width / dpr) + "px"; c.style.height = Math.floor(vp.height / dpr) + "px";
-    await page.render({ canvasContext: c.getContext("2d"), viewport: vp }).promise;
-  }
-}
-function applyZoom() {
-  if (PV.kind === "pdf") renderPdf();
-  if (PV.kind === "img") { const img = $("#pvImg"); if (img) img.style.width = Math.max(100, ($("#pvBody").clientWidth - 16) * PV.zoom) + "px"; }
+  PV.show(f, f.name, f.type);
 }
 function bindPreview() {
-  $("#pvIn").addEventListener("click", () => { PV.zoom = Math.min(4, PV.zoom * 1.25); applyZoom(); });
-  $("#pvOut").addEventListener("click", () => { PV.zoom = Math.max(0.4, PV.zoom / 1.25); applyZoom(); });
-  $("#pvFit").addEventListener("click", () => { PV.zoom = 1; applyZoom(); });
+  $("#pvIn").addEventListener("click", () => PV.zoomBy(1.25));
+  $("#pvOut").addEventListener("click", () => PV.zoomBy(1 / 1.25));
+  $("#pvFit").addEventListener("click", () => PV.fit());
   $("#pvHide").addEventListener("click", () => { const pv = $("#pv"); pv.classList.toggle("small"); $("#pvHide").textContent = pv.classList.contains("small") ? "Show" : "Hide"; });
-  let rt; window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(() => { if (PV.kind && S.page === "upload") applyZoom(); }, 250); });
+  let rt; window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(() => { if (PV.kind && S.page === "upload") PV.apply(); }, 250); });
 }
 
 function setFile(f) {
@@ -1051,9 +1216,9 @@ function setFile(f) {
 }
 async function doUpload() {
   const err = $("#uErr"); err.classList.add("hidden");
-  const folder = $("#uFolder").value.trim(), sub = $("#uSub").value.trim(), date = $("#uDate").value,
+  const folder = S.upPath[0] || "", sub = S.upPath.slice(1).join("/"), date = $("#uDate").value,
         num = $("#uNum").value.trim(), content = $("#uContent").value.trim();
-  const problem = !S.file ? "Choose a file first." : !folder ? "Pick or type a folder." : folder.includes("/") ? "A folder name can't contain /." :
+  const problem = !S.file ? "Choose a file first." : !folder ? "Choose a folder, or tap + New folder." : folder.includes("/") ? "A folder name can't contain /." :
     !date ? "Pick the date of the circular." : !num ? "Type the circular number." : !content ? "Type the content of the circular." : "";
   if (problem) { err.textContent = problem; err.classList.remove("hidden"); return; }
   if (S.uploading) return;
@@ -1164,8 +1329,11 @@ function bind() {
   ["dragenter", "dragover"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add("over"); }));
   ["dragleave", "drop"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove("over"); }));
   drop.addEventListener("drop", e => { const f = e.dataTransfer.files[0]; if (f) setFile(f); });
-  $("#uFolder").addEventListener("input", renderUploadLists);
-  $("#uSub").addEventListener("input", renderUploadLists);
+  $("#uPath").addEventListener("change", e => {
+    const sel = e.target.closest("[data-lvl]"); if (!sel) return; const lvl = +sel.dataset.lvl;
+    S.upPath = S.upPath.slice(0, lvl).concat(sel.value ? [sel.value] : []); renderUploadLists();
+  });
+  $("#uPath").addEventListener("click", e => { const b = e.target.closest("[data-newlvl]"); if (b) newFolderDialog(S.upPath.slice(0, +b.dataset.newlvl), real => { S.upPath = real; renderUploadLists(); }); });
   ["#uNum", "#uContent", "#uDate"].forEach(s => $(s).addEventListener("input", updateUploadPreview));
   $("#uNum").addEventListener("input", () => { if (S.dupOkFor) { S.dupOkFor = null; $("#uGo").textContent = "Upload"; $("#uErr").classList.add("hidden"); } });
   $("#uGo").addEventListener("click", doUpload);
@@ -1185,7 +1353,7 @@ function changeRoot() {
       try {
         await ensureSignedIn(); const f = await resolveRoot(id);
         S.rootId = f.id; S.rootName = f.name; LS.set("cb_root_id", f.id); LS.set("cb_root_name", f.name);
-        S.path = []; loadCache(); close(); renderAll(); refresh();
+        S.path = []; S.upPath = []; loadCache(); close(); renderAll(); refresh();
       } catch (e) { err.textContent = e.message; err.classList.remove("hidden"); }
     }));
 }
